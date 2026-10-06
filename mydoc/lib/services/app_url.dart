@@ -39,15 +39,19 @@ class AppUrls {
   static var riskEvaluation = "https://8yb3c41zk8.execute-api.us-east-1.amazonaws.com/evaluation";
 
   //pricing
-  static var pricingBaseUrl = "https://8yb3c41zk8.execute-api.us-east-1.amazonaws.com/";
+  // static var pricingBaseUrl = "https://8yb3c41zk8.execute-api.us-east-1.amazonaws.com/";
 
-  static var pricingPlans = "${pricingBaseUrl}pricing/plans";
-  static var activateTrial = "${pricingBaseUrl}entitlements/activate-trial";
-  static var entitlementStatus = "${pricingBaseUrl}entitlements/status";
-  static var initiateConsultation = "${pricingBaseUrl}consultations/initiate";
-  static var startConsultation = "${pricingBaseUrl}consultations/"; // {job_id}/start
-  static var planRequests = "${pricingBaseUrl}plan-requests";
+  static var pricingPlans = "${baseUrl}plans";
+  static var subscribePlan = "${baseUrl}plans/subscribe/";
+  // static var activateTrial = "${baseUrl}entitlements/activate-trial";
+  // static var entitlementStatus = "${baseUrl}entitlements/status";
+  static var entitlementStatus = "${baseUrl}plans/entitlement/";
+  // static var initiateConsultation = "${baseUrl}consultations/initiate";
+  // static var startConsultation = "${baseUrl}consultations/"; // {job_id}/start
+  // static var planRequests = "${baseUrl}plan-requests";
   static String deleteBooking = "${baseUrl}booking";
+
+  static var upload = "${baseUrl}upload";
 }
 
 

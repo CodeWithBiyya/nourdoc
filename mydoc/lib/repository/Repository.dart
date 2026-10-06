@@ -90,21 +90,57 @@ class Repository {
     return await _apiService.getPostApiResponseRaw(AppUrls.postBooking, data, token);
   }
 
-  // 2. GET: Get list of booked patients
-  Future<List<BookedPatientData>> fetchBookedListApi(String doctorId, String token) async {
-    String url = "${AppUrls.getBookedList}$doctorId";
+  // // 2. GET: Get list of booked patients
+  // Future<List<BookedPatientData>> fetchBookedListApi(String doctorId, String token) async {
+  //   String url = "${AppUrls.getBookedList}$doctorId";
 
-    // 1. Get the raw response (List of Maps)
-    final response = await _apiService.getGetResponse(url, token);
+  //   // 1. Get the raw response (List of Maps)
+  //   final response = await _apiService.getGetResponse(url, token);
 
-    // 2. 🚩 FIX: Map the JSON list to your Model list
-    if (response is List) {
-      return response.map((e) => BookedPatientData.fromJson(e)).toList();
-    } else {
-      // In case the API returns an empty object or error
-      return [];
+  //   // 2. 🚩 FIX: Map the JSON list to your Model list
+  //   if (response is List) {
+  //     return response.map((e) => BookedPatientData.fromJson(e)).toList();
+  //   } else {
+  //     // In case the API returns an empty object or error
+  //     return [];
+  //   }
+  // }
+
+  Future<List<BookedPatientData>> fetchBookedListApi(
+  String doctorId,
+  String token,
+) async {
+  String url = "${AppUrls.getBookedList}$doctorId";
+
+  debugPrint("========== BOOKED PATIENT API ==========");
+  debugPrint("URL: $url");
+
+  final response = await _apiService.getGetResponse(url, token);
+
+  debugPrint("========== RAW API RESPONSE ===========");
+  debugPrint(response.toString());
+  debugPrint("Response Type: ${response.runtimeType}");
+  debugPrint("=======================================");
+
+  if (response is List) {
+    debugPrint("Number of bookings: ${response.length}");
+
+    for (final item in response) {
+      debugPrint("---------- BOOKING ----------");
+      debugPrint(item.toString());
+      debugPrint("-----------------------------");
     }
+
+    return response
+        .map((e) => BookedPatientData.fromJson(
+              Map<String, dynamic>.from(e),
+            ))
+        .toList();
+  } else {
+    debugPrint("WARNING: Response is NOT a List");
+    return [];
   }
+}
 
   Future<dynamic> postLoginCall(Map<String, String> datamap) async {
     try {
@@ -302,58 +338,78 @@ class Repository {
 
   // --- Pricing & Entitlements ---
 
-  Future<dynamic> activateTrialApi(Map<String, dynamic> data, String token) async {
-    try {
-      return await _apiService.getPostApiResponseRaw(
-        AppUrls.activateTrial,
-        data,
-        token,
-      );
-    } catch (e) {
-      rethrow;
-    }
-  }
+  // Future<dynamic> activateTrialApi(Map<String, dynamic> data, String token) async {
+  //   try {
+  //     return await _apiService.getPostApiResponseRaw(
+  //       AppUrls.activateTrial,
+  //       data,
+  //       token,
+  //     );
+  //   } catch (e) {
+  //     rethrow;
+  //   }
+  // }
 
   Future<dynamic> getEntitlementStatusApi(String doctorId, String token) async {
     try {
-      final url = "${AppUrls.entitlementStatus}?doctor_id=$doctorId";
+      final url = "${AppUrls.entitlementStatus}$doctorId";
       return await _apiService.getGetResponse(url, token);
     } catch (e) {
       rethrow;
     }
   }
+  
 
-  Future<dynamic> requestPaidPlanApi(Map<String, dynamic> data, String token) async {
-    try {
-      return await _apiService.getPostApiResponseRaw(
-        AppUrls.planRequests,
-        data,
-        token,
-      );
-    } catch (e) {
-      rethrow;
-    }
+  // Future<dynamic> requestPaidPlanApi(Map<String, dynamic> data, String token) async {
+  //   try {
+  //     return await _apiService.getPostApiResponseRaw(
+  //       AppUrls.planRequests,
+  //       data,
+  //       token,
+  //     );
+  //   } catch (e) {
+  //     rethrow;
+  //   }
+  // }
+
+Future<dynamic> subscribeToPlanApi(
+  String doctorId,
+  String planId,
+  String token,
+) async {
+  try {
+    final url = "${AppUrls.subscribePlan}$doctorId";
+
+    return await _apiService.getPostApiResponseRaw(
+      url,
+      {
+        "plan_id": planId,
+      },
+      token,
+    );
+  } catch (e) {
+    rethrow;
   }
+}
+  // Future<dynamic> initiateConsultationApi(Map<String, dynamic> data, String token, String idempotencyKey) async {
+  //   final Map<String, String> headers = {
+  //     "Content-Type": "application/json",
+  //     "Accept": "application/json",
+  //     "Authorization": "Bearer $token",
+  //     "X-Idempotency-Key": idempotencyKey,
+  //   };
+  //   final response = await http.post(
+  //     Uri.parse(AppUrls.initiateConsultation),
+  //     headers: headers,
+  //     body: jsonEncode(data),
+  //   ).timeout(const Duration(seconds: 30));
 
-  Future<dynamic> initiateConsultationApi(Map<String, dynamic> data, String token, String idempotencyKey) async {
-    final Map<String, String> headers = {
-      "Content-Type": "application/json",
-      "Accept": "application/json",
-      "Authorization": "Bearer $token",
-      "X-Idempotency-Key": idempotencyKey,
-    };
-    final response = await http.post(
-      Uri.parse(AppUrls.initiateConsultation),
-      headers: headers,
-      body: jsonEncode(data),
-    ).timeout(const Duration(seconds: 30));
-
-    if (response.statusCode == 200 || response.statusCode == 201 || response.statusCode == 409) {
-      return jsonDecode(response.body);
-    } else {
-      throw Exception("Initiate Error: ${response.statusCode} - ${response.body}");
-    }
-  }
+  //   if (response.statusCode == 200 || response.statusCode == 201 || response.statusCode == 409) {
+  //     return jsonDecode(response.body);
+  //   } else {
+  //     throw Exception("Initiate Error: ${response.statusCode} - ${response.body}");
+  //   }
+  // }
 
  Future<bool> deleteBookedPatientApi(
   String bookingId,
@@ -381,35 +437,44 @@ class Repository {
   debugPrint("DELETE BOOKING STATUS: ${response.statusCode}");
   debugPrint("DELETE BOOKING RESPONSE: ${response.body}");
 
-  if (response.statusCode == 200 ||
-      response.statusCode == 204) {
-    return true;
-  }
-
-  throw Exception(
-    "Failed to delete booking: "
-    "${response.statusCode} - ${response.body}",
-  );
+ if (response.statusCode == 200 ||
+    response.statusCode == 204) {
+  return true;
 }
 
+// 404 means the booking is already gone.
+// Treat it as success so consultation sync can finish.
+if (response.statusCode == 404) {
+  debugPrint(
+    "BOOKING $bookingId NOT FOUND ON SERVER - "
+    "treating as already deleted",
+  );
+  return true;
+}
 
-  Future<dynamic> startConsultationApi(String jobId, Map<String, dynamic> data, String token) async {
-    final Map<String, String> headers = {
-      "Content-Type": "application/json",
-      "Accept": "application/json",
-      "Authorization": "Bearer $token",
-    };
-    final url = "${AppUrls.startConsultation}$jobId/start";
-    final response = await http.post(
-      Uri.parse(url),
-      headers: headers,
-      body: jsonEncode(data),
-    ).timeout(const Duration(seconds: 30));
+throw Exception(
+  "Failed to delete booking: "
+  "${response.statusCode} - ${response.body}",
+);}
 
-    if (response.statusCode == 200 || response.statusCode == 201 || response.statusCode == 409) {
-      return jsonDecode(response.body);
-    } else {
-      throw Exception("Start Error: ${response.statusCode} - ${response.body}");
-    }
-  }
+  // Future<dynamic> startConsultationApi(String jobId, Map<String, dynamic> data, String token) async {
+  //   final Map<String, String> headers = {
+  //     "Content-Type": "application/json",
+  //     "Accept": "application/json",
+  //     "Authorization": "Bearer $token",
+  //   };
+  //   final url = "${AppUrls.startConsultation}$jobId/start";
+  //   final response = await http.post(
+  //     Uri.parse(url),
+  //     headers: headers,
+  //     body: jsonEncode(data),
+  //   ).timeout(const Duration(seconds: 30));
+
+  //   if (response.statusCode == 200 || response.statusCode == 201 || response.statusCode == 409) {
+  //     return jsonDecode(response.body);
+  //   } else {
+  //     throw Exception("Start Error: ${response.statusCode} - ${response.body}");
+  //   }
+  // }
+
 }

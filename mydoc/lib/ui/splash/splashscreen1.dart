@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:in_app_update/in_app_update.dart';
+// import 'package:in_app_update/in_app_update.dart';
 import 'splashscreen.dart' show splashscreen;
 
 class SingleSplashScreen extends StatefulWidget {
@@ -36,17 +36,17 @@ class _SingleSplashScreenState extends State<SingleSplashScreen>
     startSequence();
   }
 
-  Future<void> _checkForUpdate() async {
-    try {
-      AppUpdateInfo updateInfo = await InAppUpdate.checkForUpdate();
-      if (updateInfo.updateAvailability == UpdateAvailability.updateAvailable &&
-          updateInfo.immediateUpdateAllowed) {
-        await InAppUpdate.performImmediateUpdate();
-      }
-    } catch (e) {
-      print("Error checking update: $e");
-    }
-  }
+  // Future<void> _checkForUpdate() async {
+  //   try {
+  //     AppUpdateInfo updateInfo = await InAppUpdate.checkForUpdate();
+  //     if (updateInfo.updateAvailability == UpdateAvailability.updateAvailable &&
+  //         updateInfo.immediateUpdateAllowed) {
+  //       await InAppUpdate.performImmediateUpdate();
+  //     }
+  //   } catch (e) {
+  //     print("Error checking update: $e");
+  //   }
+  // }
 
   void startSequence() async {
     await Future.delayed(const Duration(milliseconds: 100));
@@ -58,7 +58,7 @@ class _SingleSplashScreenState extends State<SingleSplashScreen>
       _controller.forward();
     }
 
-    _checkForUpdate();
+    // _checkForUpdate();
 
     // Delay thora barha diya taake text read kiya ja saky
     await Future.delayed(const Duration(milliseconds: 3000));

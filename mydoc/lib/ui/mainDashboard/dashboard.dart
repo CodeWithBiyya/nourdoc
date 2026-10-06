@@ -20,8 +20,8 @@ import '../../utils/hive_storage.dart';
 import '../../utils/noInternet.dart';
 import '../../utils/utils.dart';
 import '../my_consultations/my_encounters.dart';
-import '../wedgits/BottomLoginWidget.dart';
-import '../wedgits/doctorinfo_dialogbox.dart';
+import '../widgets/BottomLoginWidget.dart';
+import '../widgets/doctorinfo_dialogbox.dart';
 import '../../services/app_url.dart';
 import '../../ui/Subscription_screens/Subscription_screen_1.dart';
 

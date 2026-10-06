@@ -147,6 +147,109 @@ class HiveStorage {
   static Future<void> setlicenseno(String license) async => await _box.put('license_no', license);
   static String? getlicenseno() => _box.get('license_no');
 
+// ============================================================
+// COMPLETED BOOKING IDS
+// ============================================================
+
+// ============================================================
+// COMPLETED BOOKINGS
+// ============================================================
+
+static List<String> getCompletedBookingIds() {
+  if (!_box.isOpen) return [];
+
+  try {
+    final value = _box.get(
+      'completed_booking_ids',
+      defaultValue: <String>[],
+    );
+
+    if (value is List) {
+      return value.map((e) => e.toString()).toList();
+    }
+
+    return [];
+  } catch (e) {
+    print('[HIVE] Error getting completed bookings: $e');
+    return [];
+  }
+}
+
+// static Future<void> markBookingCompleted(String bookingId) async {
+//   if (!_box.isOpen) return;
+
+//   final id = bookingId.trim();
+
+//   if (id.isEmpty) return;
+
+//   final ids = getCompletedBookingIds();
+
+//   if (!ids.contains(id)) {
+//     ids.add(id);
+
+//     await _box.put(
+//       'completed_booking_ids',
+//       ids,
+//     );
+
+//     print('[HIVE] COMPLETED BOOKING SAVED: $id');
+//   }
+// }
+
+
+static bool isBookingCompleted(String bookingId) {
+  return getCompletedBookingIds()
+      .contains(bookingId.trim());
+}
+
+
+
+static Future<void> markBookingCompleted(String bookingId) async {
+  if (!_box.isOpen) return;
+
+  final id = bookingId.trim();
+
+  if (id.isEmpty) return;
+
+  try {
+    final completedIds = getCompletedBookingIds();
+
+    // Don't add duplicate IDs
+    if (!completedIds.contains(id)) {
+      completedIds.add(id);
+
+      await _box.put(
+        'completed_booking_ids',
+        completedIds,
+      );
+
+      print("[HIVE] Booking marked completed: $id");
+    } else {
+      print("[HIVE] Booking already completed: $id");
+    }
+  } catch (e) {
+    print("[HIVE] Error marking booking completed: $e");
+  }
+}
+
+static Future<void> removeCompletedBooking(String bookingId) async {
+  if (!_box.isOpen) return;
+
+  final id = bookingId.trim();
+
+  try {
+    final completedIds = getCompletedBookingIds();
+
+    completedIds.remove(id);
+
+    await _box.put(
+      'completed_booking_ids',
+      completedIds,
+    );
+  } catch (e) {
+    print("[HIVE] Error removing completed booking: $e");
+  }
+}
   static Future<void> clearHives() async {
     await _box.clear();
     await _outbox.clear();

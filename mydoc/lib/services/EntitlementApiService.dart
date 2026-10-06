@@ -42,8 +42,8 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 class EntitlementApiService {
-  static const String baseUrl =
-      'https://8yb3c41zk8.execute-api.us-east-1.amazonaws.com';
+  static const String baseUrl =  
+      'https://8wfvyjajy1.execute-api.us-east-1.amazonaws.com';
 
   // =========================================================
   // ACTIVATE TRIAL
@@ -104,13 +104,13 @@ class EntitlementApiService {
   Future<Map<String, dynamic>> getEntitlementStatus({
     required String doctorId,
   }) async {
-    final url = Uri.parse(
-      '$baseUrl/entitlements/status',
-    ).replace(
-      queryParameters: {
-        'doctor_id': doctorId,
-      },
-    );
+    //  final url = Uri.parse('$baseUrl/plans/entitlement/$doctorId').replace(
+    //   queryParameters: {
+    //     'doctor_id': doctorId,
+    //   },
+    // );
+
+    final url = Uri.parse('$baseUrl/plans/entitlement/$doctorId');
 
     final response = await http.get(
       url,

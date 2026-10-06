@@ -92,15 +92,12 @@ class Routes {
 
 
       default:
-        return MaterialPageRoute(
-            builder: (_) {
-              return Scaffold(
-                body: Center(
-                  child: Text("No route defined."),
-                ),
-              );
-            },
-            settings: settings);
+  debugPrint('⚠️ UNKNOWN ROUTE: ${settings.name}');
+
+  return MaterialPageRoute(
+    builder: (_) => const SizedBox.shrink(),
+    settings: settings,
+  );
     }
   }
 }

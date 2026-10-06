@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../model/PlanModel.dart';
+import '../../routes/routs_name.dart';
 
 class SuccessScreen extends StatelessWidget {
   final PlanModel selectedPlan;
@@ -141,7 +142,13 @@ class SuccessScreen extends StatelessWidget {
               width: double.infinity,
               height: 48,
               child: ElevatedButton(
-                onPressed: () => Navigator.popUntil(context, (route) => route.isFirst),
+                onPressed: () {
+  Navigator.pushNamedAndRemoveUntil(
+    context,
+      RouteNames.dashboard,
+    (route) => false,
+  );
+},
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primaryColor,
                   elevation: 0,

@@ -15,9 +15,9 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../utils/noInternet.dart';
-import '../wedgits/BottomLoginWidget.dart';
-import '../wedgits/appbar_actions_wiget.dart';
-import '../wedgits/doctorinfo_dialogbox.dart';
+import '../widgets/BottomLoginWidget.dart';
+import '../widgets/appbar_actions_wiget.dart';
+import '../widgets/doctorinfo_dialogbox.dart';
 import '../Subscription_screens/Subscription_screen_1.dart';
 
 
@@ -171,9 +171,9 @@ class _MyEncountersScreen extends State<MyEncountersScreen>
                 }
               },
               itemBuilder: (context) => [
-                const PopupMenuItem(value: 'profile', child: Text("My Profile")),
-                //const PopupMenuItem(value: 'subscription', child: Text("Upgrade/Downgrade")),
+                const PopupMenuItem(value: 'profile', child: Text("My Profile")),           
                 const PopupMenuItem(value: 'about', child: Text("About NourDoc")),
+                const PopupMenuItem(value: 'subscription', child: Text("Upgrade/Downgrade")),
                 const PopupMenuItem(value: 'legal', child: Text("Medico-Legal")),
                 const PopupMenuItem(value: 'privacy', child: Text("Privacy Policy")),
                 const PopupMenuDivider(),

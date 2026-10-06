@@ -76,6 +76,7 @@ dependencies:
   haptic_feedback: ^0.6.5
   workmanager: ^0.10.9          # ← NEW – for the single background worker
   sqflite: ^2.3.3
+  app_links: ^6.4.0
 #  flutter_beep: ^1.0.0 # Add this line
 
 

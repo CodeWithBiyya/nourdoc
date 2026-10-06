@@ -88,6 +88,13 @@ class PendingConsultation extends HiveObject {
 
   });
 
+int get durationSeconds {
+    final value =
+        endTime.difference(startTime).inSeconds;
+
+    return value > 0 ? value : 1;
+  }
+
   /// 🔹 ADD THIS: Convert Object to Map for sending between Isolates
   Map<String, dynamic> toJson(dynamic hiveKey) {
     return {

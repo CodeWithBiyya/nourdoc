@@ -242,40 +242,72 @@ class ConsultationViewModel with ChangeNotifier {
   // ============================================================
 
   Future<void> getBookedPatients() async {
+  if (_isDisposed) return;
+
+  setBookedList(ApiResponse.loading());
+
+  // Doctor email is used as doctor_id
+  final String doctorId = HiveStorage.getEmail() ?? "";
+
+  // Authentication token
+  final String token = HiveStorage.getToken() ?? "";
+
+  try {
+    final value = await _myRepo.fetchBookedListApi(
+      doctorId,
+      token,
+    );
+
+    debugPrint(
+      "BOOKED PATIENTS FROM API: "
+      "${value.map((e) => e.bookingId).toList()}",
+    );
+
+    // ============================================================
+    // REMOVE ALREADY COMPLETED BOOKINGS
+    // ============================================================
+
+    final completedBookingIds =
+        HiveStorage.getCompletedBookingIds().toSet();
+
+    debugPrint(
+      "COMPLETED BOOKING IDS: $completedBookingIds",
+    );
+
+    final filteredList = value.where((patient) {
+      final bookingId = patient.bookingId.toString().trim();
+
+      final alreadyCompleted =
+          completedBookingIds.contains(bookingId);
+
+      if (alreadyCompleted) {
+        debugPrint(
+          "FILTERING COMPLETED BOOKING: $bookingId",
+        );
+      }
+
+      return !alreadyCompleted;
+    }).toList();
+
+    debugPrint(
+      "BOOKED PATIENTS AFTER FILTER: "
+      "${filteredList.map((e) => e.bookingId).toList()}",
+    );
+
     if (_isDisposed) return;
 
-    setBookedList(ApiResponse.loading());
+    setBookedList(
+      ApiResponse.completed(filteredList),
+    );
+  } catch (error) {
+    if (_isDisposed) return;
 
-    // Doctor email is used as doctor_id
-    String doctorId = HiveStorage.getEmail() ?? "";
-
-    // Authentication token
-    String token = HiveStorage.getToken() ?? "";
-
-    try {
-      final value = await _myRepo.fetchBookedListApi(
-        doctorId,
-        token,
-      );
-
-      debugPrint(
-        "BOOKED PATIENTS AFTER API CALL: "
-        "${value.map((e) => e.bookingId).toList()}",
-      );
-
-      if (_isDisposed) return;
-
-      setBookedList(
-        ApiResponse.completed(value),
-      );
-    } catch (error) {
-      if (_isDisposed) return;
-
-      setBookedList(
-        ApiResponse.error(error.toString()),
-      );
-    }
+    setBookedList(
+      ApiResponse.error(error.toString()),
+    );
   }
+}
+    
 
   // ============================================================
   // REMOVE BOOKING FROM LOCAL UI LIST

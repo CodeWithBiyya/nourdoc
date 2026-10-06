@@ -34,13 +34,14 @@ class PendingConsultationAdapter extends TypeAdapter<PendingConsultation> {
       patientPhone: fields[0] as String,
       isSyncing: fields[15] as bool,
       patientId: fields[16] as String?,
-    );
+      bookingId: fields[18] as String?,
+    )..s3Headers = (fields[17] as Map?)?.cast<String, String>();
   }
 
   @override
   void write(BinaryWriter writer, PendingConsultation obj) {
     writer
-      ..writeByte(17)
+      ..writeByte(19)
       ..writeByte(0)
       ..write(obj.patientPhone)
       ..writeByte(1)
@@ -74,7 +75,11 @@ class PendingConsultationAdapter extends TypeAdapter<PendingConsultation> {
       ..writeByte(15)
       ..write(obj.isSyncing)
       ..writeByte(16)
-      ..write(obj.patientId);
+      ..write(obj.patientId)
+      ..writeByte(17)
+      ..write(obj.s3Headers)
+      ..writeByte(18)
+      ..write(obj.bookingId);
   }
 
   @override

@@ -112,6 +112,10 @@ class utils {
       }
 
       final status = await Repository().getEntitlementStatusApi(doctorId, token).timeout(const Duration(seconds: 15));
+      debugPrint("========== ENTITLEMENT STATUS ==========");
+debugPrint("Doctor: $doctorId");
+debugPrint("Response: $status");
+debugPrint("=========================================");
       print("GET ENTITLEMENT STATUS API RESPONSE: $status");
       Navigator.pop(context); // Close loading dialog
 
@@ -123,14 +127,16 @@ class utils {
 
       if (statusStr != 'active') {
         _showUpgradeDialog(context, "No active plan or plan has expired. Please select a package to continue.");
-        return false;
+        // return false;
+        return true;
       }
 
       final num remainingMinutes = data['remaining_minutes'] ?? 0;
 
       if (remainingMinutes <= 0) {
         _showUpgradeDialog(context, "You have exhausted your plan minutes. Please upgrade to a paid plan to continue.");
-        return false;
+        // return false;
+        return true;
       }
 
       return true;

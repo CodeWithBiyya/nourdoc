@@ -140,48 +140,99 @@ class PlanModel {
     this.remainingMinutes,
   });
 
-  factory PlanModel.fromJson(Map<String, dynamic> json) {
-    return PlanModel(
-      id: json['plan_id']?.toString() ?? '',
-      planCode: json['plan_code']?.toString() ?? '',
-      title: json['name']?.toString() ?? '',
+  // factory PlanModel.fromJson(Map<String, dynamic> json) {
+  //   return PlanModel(
+  //     id: json['id']?.toString() ?? '',
+  //     planCode: json['plan_code']?.toString() ?? '',
+  //     title: json['name']?.toString() ?? '',
 
-      displayPrice:
-          double.tryParse(
-                json['display_price']?.toString() ?? '0',
-              ) ??
-              0,
+  //     displayPrice:
+  //         double.tryParse(
+  //               json['display_price']?.toString() ?? '0',
+  //             ) ??
+  //             0,
 
-      discountedPrice:
-          double.tryParse(
-                json['discounted_price']?.toString() ?? '0',
-              ) ??
-              0,
+  //     discountedPrice:
+  //         double.tryParse(
+  //               json['discounted_price']?.toString() ?? '0',
+  //             ) ??
+  //             0,
 
-      currency: json['currency']?.toString() ?? 'PKR',
+  //     currency: json['currency']?.toString() ?? 'PKR',
 
-      includedMinutes:
-          int.tryParse(
-                json['included_minutes']?.toString() ?? '0',
-              ) ??
-              0,
+  //     includedMinutes:
+  //         int.tryParse(
+  //               json['included_minutes']?.toString() ?? '0',
+  //             ) ??
+  //             0,
 
-      includedSeconds:
-          int.tryParse(
-                json['included_seconds']?.toString() ?? '0',
-              ) ??
-              0,
+  //     includedSeconds:
+  //         int.tryParse(
+  //               json['included_seconds']?.toString() ?? '0',
+  //             ) ??
+  //             0,
 
-      expiryDays:
-          int.tryParse(
-                json['expiry_days']?.toString() ?? '0',
-              ) ??
-              0,
+  //     expiryDays:
+  //         int.tryParse(
+  //               json['expiry_days']?.toString() ?? '0',
+  //             ) ??
+  //             0,
 
-      isTrial: json['is_trial'] == true,
-    );
-  }
+  //     isTrial: json['is_trial'] == true,
+  //   );
+  // }
 
+factory PlanModel.fromJson(Map<String, dynamic> json) {
+  return PlanModel(
+    id: json['id']?.toString() ?? '',
+
+    // API has "name", e.g. TRIAL / STARTER
+    planCode: json['name']?.toString() ?? '',
+
+    title: json['name']?.toString() ?? '',
+
+    // API has "price"
+    displayPrice:
+        double.tryParse(
+              json['price']?.toString() ?? '0',
+            ) ??
+            0,
+
+    discountedPrice:
+        double.tryParse(
+              json['price']?.toString() ?? '0',
+            ) ??
+            0,
+
+    currency: json['currency']?.toString() ?? 'PKR',
+
+    // Convert seconds from API to minutes for UI
+    includedMinutes:
+        ((int.tryParse(
+                  json['included_seconds']?.toString() ?? '0',
+                ) ??
+                0) /
+            60)
+            .floor(),
+
+    includedSeconds:
+        int.tryParse(
+              json['included_seconds']?.toString() ?? '0',
+            ) ??
+            0,
+
+    // API has "validity_days"
+    expiryDays:
+        int.tryParse(
+              json['validity_days']?.toString() ?? '0',
+            ) ??
+            0,
+
+    // API doesn't provide is_trial, so determine it from name
+    isTrial:
+        json['name']?.toString().toLowerCase() == 'trial',
+  );
+}
   // ---------------------------------------------------------
   // Actual price to display
   // ---------------------------------------------------------
@@ -231,11 +282,17 @@ class PlanModel {
   // ---------------------------------------------------------
 
   String get displayTitle {
-    if (title.toLowerCase() == 'trial') {
-      return 'Trial Plan';
-    }
+   final cleanTitle = title.trim();
 
-    return '$title Plan';
+  // If API already returns "Trial Plan", "Starter Plan", etc.
+  // don't add another "Plan".
+  if (cleanTitle.toLowerCase().endsWith(' plan')) {
+    return cleanTitle;
+  }
+
+  // If API returns only "Trial", "Starter", etc.
+  // add "Plan" once.
+  return '$cleanTitle Plan';
   }
 
   // ---------------------------------------------------------
