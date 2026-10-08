@@ -360,57 +360,6 @@ class Repository {
   }
   
 
-  // Future<dynamic> requestPaidPlanApi(Map<String, dynamic> data, String token) async {
-  //   try {
-  //     return await _apiService.getPostApiResponseRaw(
-  //       AppUrls.planRequests,
-  //       data,
-  //       token,
-  //     );
-  //   } catch (e) {
-  //     rethrow;
-  //   }
-  // }
-
-Future<dynamic> subscribeToPlanApi(
-  String doctorId,
-  String planId,
-  String token,
-) async {
-  try {
-    final url = "${AppUrls.subscribePlan}$doctorId";
-
-    return await _apiService.getPostApiResponseRaw(
-      url,
-      {
-        "plan_id": planId,
-      },
-      token,
-    );
-  } catch (e) {
-    rethrow;
-  }
-}
-  // Future<dynamic> initiateConsultationApi(Map<String, dynamic> data, String token, String idempotencyKey) async {
-  //   final Map<String, String> headers = {
-  //     "Content-Type": "application/json",
-  //     "Accept": "application/json",
-  //     "Authorization": "Bearer $token",
-  //     "X-Idempotency-Key": idempotencyKey,
-  //   };
-  //   final response = await http.post(
-  //     Uri.parse(AppUrls.initiateConsultation),
-  //     headers: headers,
-  //     body: jsonEncode(data),
-  //   ).timeout(const Duration(seconds: 30));
-
-  //   if (response.statusCode == 200 || response.statusCode == 201 || response.statusCode == 409) {
-  //     return jsonDecode(response.body);
-  //   } else {
-  //     throw Exception("Initiate Error: ${response.statusCode} - ${response.body}");
-  //   }
-  // }
-
  Future<bool> deleteBookedPatientApi(
   String bookingId,
   String token,
@@ -456,25 +405,4 @@ throw Exception(
   "Failed to delete booking: "
   "${response.statusCode} - ${response.body}",
 );}
-
-  // Future<dynamic> startConsultationApi(String jobId, Map<String, dynamic> data, String token) async {
-  //   final Map<String, String> headers = {
-  //     "Content-Type": "application/json",
-  //     "Accept": "application/json",
-  //     "Authorization": "Bearer $token",
-  //   };
-  //   final url = "${AppUrls.startConsultation}$jobId/start";
-  //   final response = await http.post(
-  //     Uri.parse(url),
-  //     headers: headers,
-  //     body: jsonEncode(data),
-  //   ).timeout(const Duration(seconds: 30));
-
-  //   if (response.statusCode == 200 || response.statusCode == 201 || response.statusCode == 409) {
-  //     return jsonDecode(response.body);
-  //   } else {
-  //     throw Exception("Start Error: ${response.statusCode} - ${response.body}");
-  //   }
-  // }
-
 }
