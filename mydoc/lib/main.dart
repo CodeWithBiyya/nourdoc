@@ -251,6 +251,7 @@ import 'dart:async';
 
 // import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
+import 'package:medicalai/repository/Repository.dart';
 import 'package:medicalai/routes/route.dart';
 import 'package:medicalai/routes/routs_name.dart';
 import 'package:medicalai/utils/hive_storage.dart';
@@ -547,8 +548,7 @@ class _AppLifecycleHandlerState
       print(
         "🔄 APP RESUMED",
       );
-
-      // _handleResume();
+      Repository().readDoctorEntitlement();
     }
   }
 

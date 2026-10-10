@@ -218,37 +218,47 @@ class _splashscreen extends State<splashscreen> {
       );
 
       try {
-        final repo = Repository();
-        final status = await repo.getEntitlementStatusApi(email, token).timeout(const Duration(seconds: 15));
-        print("SPLASH ENTITLEMENT STATUS API RESPONSE: $status");
+        final read = await Repository().readDoctorEntitlement();
+        print("SPLASH ENTITLEMENT: ${read.result}");
 
-        if (mounted) Navigator.pop(context); // Remove loader
+        if (mounted) Navigator.pop(context);
 
-        if (status != null) {
-          // final data = (status is Map && status.containsKey('response')) ? status['response'] : status;
-          // final statusStr = (data is Map ? (data['status'] ?? '') : '').toString().trim().toLowerCase();
+        if (!mounted) return;
 
-          // // Doctor is enrolled in a plan -> go straight to Dashboard
-          // // (remaining minutes are enforced later, when starting a consultation)
-          // final bool isEnrolled =
-          //     statusStr == 'active' || (data is Map && data['is_active'] == true);
-
-          final bool isEnrolled = EntitlementHelper.isEnrolled(status);
-
-          if (mounted) {
-            Navigator.pushReplacementNamed(
-              context,
-              isEnrolled ? RouteNames.dashboard : RouteNames.subscription_screen,
-            );
-          }
-        } else {
-          if (mounted) Navigator.pushReplacementNamed(context, RouteNames.subscription_screen);
+        if (read.result == EntitlementFetchResult.network ||
+            read.result == EntitlementFetchResult.malformed) {
+          showAppDialog(
+            context: context,
+            icon: Icons.wifi_off,
+            title: "Could not verify plan",
+            content: "Your plan could not be checked, so the app did not open a session. Try again.",
+            primaryText: "OK",
+            onPrimary: () => Navigator.pop(context),
+          );
+          return;
         }
+
+        final hasPlan = read.snapshot?.hasEntitlement ?? false;
+        Navigator.pushReplacementNamed(
+          context,
+          hasPlan ? RouteNames.dashboard : RouteNames.subscription_screen,
+        );
+        // Previous navigation used EntitlementHelper.isEnrolled(status),
+        // which ignored a zero balance. If the request failed, the catch
+        // below used to open the dashboard anyway:
+        // Navigator.pushReplacementNamed(context, RouteNames.dashboard);
       } catch (e) {
         print("Status check error in splash: $e");
-        if (mounted) Navigator.pop(context); // Remove loader
-        // Fallback to dashboard to prevent locking user out offline
-        if (mounted) Navigator.pushReplacementNamed(context, RouteNames.dashboard);
+        if (mounted) Navigator.pop(context);
+        if (!mounted) return;
+        showAppDialog(
+          context: context,
+          icon: Icons.wifi_off,
+          title: "Could not verify plan",
+          content: "Your plan could not be checked, so the app did not open a session. Try again.",
+          primaryText: "OK",
+          onPrimary: () => Navigator.pop(context),
+        );
       }
     } else {
       if (mounted) Navigator.pushReplacementNamed(context, RouteNames.login_with_email);

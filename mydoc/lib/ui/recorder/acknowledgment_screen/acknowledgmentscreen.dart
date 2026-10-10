@@ -13,6 +13,7 @@ class AcknowledgmentScreen extends StatelessWidget {
     final String patientName = args['name_patient'] ?? "N/A";
     final String doctorName = HiveStorage.getName() ?? "Doctor";
     final String duration = args['duration'] ?? "0 sec";
+    final String remainingUsage = args['remaining_usage'] ?? "";
 
     return WillPopScope(
       onWillPop: () async {
@@ -102,7 +103,7 @@ class AcknowledgmentScreen extends StatelessWidget {
                         const SizedBox(height: 20),
 
                         // --- INFO BOX ---
-                        _buildMainInfoBox(patientName, duration),
+                        _buildMainInfoBox(patientName, duration, remainingUsage),
 
                         const SizedBox(height: 30),
 
@@ -231,7 +232,7 @@ class AcknowledgmentScreen extends StatelessWidget {
 
   // --- REUSABLE UI HELPERS TO KEEP CODE CLEAN ---
 
-  Widget _buildMainInfoBox(String name, String dur) {
+  Widget _buildMainInfoBox(String name, String dur, String remainingUsage) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -245,6 +246,10 @@ class AcknowledgmentScreen extends StatelessWidget {
           _buildInfoRow(Icons.person_outline, "Patient", name),
           Divider(color: Colors.grey.shade100, height: 25),
           _buildInfoRow(Icons.timer_outlined, "Duration", dur),
+          if (remainingUsage.isNotEmpty) ...[
+            Divider(color: Colors.grey.shade100, height: 25),
+            _buildInfoRow(Icons.hourglass_bottom, "Plan time left", remainingUsage),
+          ],
         ],
       ),
     );

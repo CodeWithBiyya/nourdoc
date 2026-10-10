@@ -266,15 +266,36 @@ factory PlanModel.fromJson(Map<String, dynamic> json) {
   // ---------------------------------------------------------
 
   String get description {
-    if (includedMinutes > 0 && expiryDays > 0) {
-      return 'Up to $includedMinutes AI minutes for $expiryDays days';
-    }
-
+    // Previous one-line text, also shown on the Packages screen:
+    // if (includedMinutes > 0 && expiryDays > 0) {
+    //   return 'Up to $includedMinutes AI minutes for $expiryDays days';
+    // }
+    // if (includedMinutes > 0) {
+    //   return 'Up to $includedMinutes AI minutes';
+    // }
     if (includedMinutes > 0) {
-      return 'Up to $includedMinutes AI minutes';
+      return 'Up to $includedMinutes processing minutes';
     }
 
     return 'Subscription plan';
+  }
+
+  /// Lines the checkout "You will get" block can show from GET /plans.
+  String get youWillGet {
+    final lines = <String>[];
+
+    if (includedMinutes > 0) {
+      lines.add('Up to $includedMinutes processing minutes');
+    }
+    if (expiryDays > 0) {
+      lines.add('Valid for $expiryDays days');
+    }
+    if (includedSeconds > 0) {
+      lines.add('$includedSeconds included seconds');
+    }
+
+    if (lines.isEmpty) return description;
+    return lines.join('\n');
   }
 
   // ---------------------------------------------------------

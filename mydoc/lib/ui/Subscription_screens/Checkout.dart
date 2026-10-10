@@ -245,13 +245,15 @@ class _CheckoutState extends State<Checkout> {
         backgroundColor: Colors.white,
         elevation: 0,
 
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back,
-            color: primaryColor,
-            size: 22,
+        leading: Padding(
+          padding: const EdgeInsets.all(8),
+          child: CircleAvatar(
+            backgroundColor: primaryColor,
+            child: IconButton(
+              icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 16),
+              onPressed: () => Navigator.pop(context),
+            ),
           ),
-          onPressed: () => Navigator.pop(context),
         ),
 
         title: const Text(
@@ -316,6 +318,7 @@ class _CheckoutState extends State<Checkout> {
                   const SizedBox(height: 15),
 
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Image.asset(
                         plan.icon,
@@ -338,47 +341,51 @@ class _CheckoutState extends State<Checkout> {
 
                       Expanded(
                         child: Column(
-                          crossAxisAlignment:
-                              CrossAxisAlignment.start,
-
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               plan.displayTitle,
-                              style:
-                                  const TextStyle(
+                              style: const TextStyle(
                                 fontSize: 14,
-                                fontWeight:
-                                    FontWeight.bold,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
-
                             const SizedBox(height: 3),
-
                             Text(
                               plan.description,
-                              maxLines: 2,
-                              overflow:
-                                  TextOverflow.ellipsis,
-
                               style: TextStyle(
                                 fontSize: 11,
-                                color:
-                                    Colors.grey[600],
+                                color: Colors.grey[600],
+                                height: 1.3,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            const Text(
+                              'You will get:',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              plan.youWillGet,
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.grey[600],
+                                height: 1.4,
                               ),
                             ),
                           ],
                         ),
                       ),
-
                       const SizedBox(width: 8),
-
                       Text(
-                        plan.formattedPrice,
-                        style:
-                            const TextStyle(
+                        'Total Price - ${plan.formattedPrice}',
+                        textAlign: TextAlign.right,
+                        style: const TextStyle(
                           fontSize: 11,
-                          fontWeight:
-                              FontWeight.bold,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ],

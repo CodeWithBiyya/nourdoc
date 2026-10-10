@@ -5,6 +5,8 @@ class HiveStorage {
   static late Box _box;
   static late Box<PendingConsultation> _outbox;
 
+  /// Local feedback milestone. Not the plan balance.
+  /// A usable entitlement is not blocked by this count.
   static const int batchLimit = 5;
 
   static int getServerBatchCount() {

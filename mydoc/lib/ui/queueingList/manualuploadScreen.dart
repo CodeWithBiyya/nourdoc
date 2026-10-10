@@ -9,6 +9,7 @@ import 'package:medicalai/routes/routs_name.dart';
 import 'package:medicalai/services/upload_service.dart';
 import 'package:medicalai/utils/colors.dart';
 import 'package:medicalai/utils/hive_storage.dart';
+import 'package:medicalai/utils/entitlement_helper.dart';
 import 'package:medicalai/utils/utils.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
@@ -144,6 +145,16 @@ Future<void> _startSyncProcess() async {
       "sugar": _task!.sugar,
     };
  
+    if (!mounted) return;
+    final access = await utils.requireProtectedAccess(
+      context,
+      upcomingSeconds: duration,
+    );
+    if (access == null) {
+      await _handleAbort('Upload cancelled. The recording is still in the Outbox.');
+      return;
+    }
+
     // STEP 1
     final apiData = await _syncService.getPresignedData(
       fileName: fileName,
@@ -219,13 +230,22 @@ Future<void> _startSyncProcess() async {
       _log("⚠️ Outbox cleanup failed: $e");
     }
  
+    final refreshed = await _repository.readDoctorEntitlement();
+    final remaining = refreshed.snapshot == null
+        ? ''
+        : EntitlementHelper.formatSeconds(refreshed.snapshot!.remainingSeconds);
+
     if (mounted) {
       utils.toastMessage("Upload Successful!");
       Navigator.pushNamedAndRemoveUntil(
         context,
         RouteNames.acknowledgment_screen,
         (r) => r.settings.name == RouteNames.dashboard,
-        arguments: {"name_patient": _task!.patientName, "duration": "Saved"},
+        arguments: {
+          "name_patient": _task!.patientName,
+          "duration": "Saved",
+          "remaining_usage": remaining,
+        },
       );
     }
   } catch (e, st) {

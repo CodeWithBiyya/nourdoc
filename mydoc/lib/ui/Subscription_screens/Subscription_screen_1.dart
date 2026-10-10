@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../model/PlanModel.dart';
+import '../../repository/Repository.dart';
+import '../../services/PlanRequestApiService.dart';
 import '../../services/Pricing_api_service.dart';
+import '../../utils/entitlement_helper.dart';
+import '../../utils/hive_storage.dart';
+import '../../routes/routs_name.dart';
 import 'Checkout.dart';
 
 class SubscriptionScreen1 extends StatefulWidget {
@@ -21,6 +26,8 @@ class _SubscriptionScreen1State extends State<SubscriptionScreen1> {
 
   bool isLoading = true;
   String? errorMessage;
+  EntitlementRead? entitlementRead;
+  String? activatingPlanId;
 
   @override
   void initState() {
@@ -28,15 +35,68 @@ class _SubscriptionScreen1State extends State<SubscriptionScreen1> {
     _loadPlans();
   }
 
+  EntitlementSnapshot? get _entitlement => entitlementRead?.snapshot;
+
+  bool _samePlan(PlanModel plan) {
+    final current = _entitlement;
+    if (current == null || !current.hasEntitlement) return false;
+    return current.planId == plan.id ||
+        current.planName.toUpperCase() == plan.planCode.toUpperCase();
+  }
+
+  bool _purchaseBlocked(PlanModel plan) {
+    final read = entitlementRead;
+    if (read == null ||
+        read.result == EntitlementFetchResult.network ||
+        read.result == EntitlementFetchResult.malformed) {
+      return true;
+    }
+
+    final current = read.snapshot;
+    if (current == null || !current.hasEntitlement) return false;
+    if (!current.isExpired) return true;
+    return current.isTrial && plan.planCode.toUpperCase() == 'TRIAL';
+  }
+
+  String _buttonLabel(PlanModel plan) {
+    final read = entitlementRead;
+    if (read == null ||
+        read.result == EntitlementFetchResult.network ||
+        read.result == EntitlementFetchResult.malformed) {
+      return 'Unavailable';
+    }
+    if (plan.planCode.toLowerCase() == 'enterprise') return 'Talk to us';
+
+    final current = _entitlement;
+    if (current != null && _samePlan(plan) && !current.isExpired) {
+      return 'Current plan';
+    }
+    if (current != null && current.isExpired && current.isTrial && plan.planCode.toUpperCase() == 'TRIAL') {
+      return 'Trial ended';
+    }
+    if (current != null && current.blocksAnotherPurchase && !_samePlan(plan)) {
+      return 'Plan active';
+    }
+    // GET /plans/entitlement does not say whether a trial was used before
+    // when no entitlement is returned, and an expired paid plan does not
+    // include trial history either. "Start trial" is shown only because
+    // eligibility cannot be known here. The server accepts or rejects it.
+    if (plan.effectivePrice == 0) return 'Start trial';
+    return 'Proceed with ${plan.formattedPrice}';
+  }
+
   Future<void> _loadPlans() async {
     try {
       final plans = await _pricingApiService.getPlans();
+      final entitlement = await Repository().readDoctorEntitlement();
 
       if (!mounted) return;
 
       setState(() {
         allPlans = plans;
+        entitlementRead = entitlement;
         isLoading = false;
+        errorMessage = null;
       });
     } catch (e) {
       if (!mounted) return;
@@ -48,6 +108,103 @@ class _SubscriptionScreen1State extends State<SubscriptionScreen1> {
 
       debugPrint('Error loading plans: $e');
     }
+  }
+
+  Future<void> _activateWithoutPayment(PlanModel plan) async {
+    if (activatingPlanId != null) return;
+
+    final doctorId = (HiveStorage.getUserEmail() ?? '').trim().toLowerCase();
+    if (doctorId.isEmpty) {
+      _showMessage('Doctor is not logged in.');
+      return;
+    }
+
+    setState(() => activatingPlanId = plan.id);
+
+    try {
+      await PlanRequestApiService().subscribeToPlan(
+        doctorId: doctorId,
+        planId: plan.id,
+      );
+
+      final read = await Repository().readDoctorEntitlement();
+      if (!mounted) return;
+
+      final confirmed = read.snapshot;
+      final matches = confirmed != null &&
+          (confirmed.planId == plan.id ||
+              confirmed.planName.toUpperCase() == plan.planCode.toUpperCase());
+
+      if (!matches || confirmed == null || !confirmed.canUseProtectedFeatures) {
+        setState(() {
+          entitlementRead = read;
+          activatingPlanId = null;
+        });
+        _showMessage('The trial could not be confirmed. Nothing else was changed.');
+        return;
+      }
+
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        RouteNames.dashboard,
+        (route) => false,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      if (e.toString().toLowerCase().contains('already has an active plan')) {
+        final read = await Repository().readDoctorEntitlement();
+        if (!mounted) return;
+        setState(() {
+          entitlementRead = read;
+          activatingPlanId = null;
+        });
+        final name = read.snapshot?.planName;
+        _showMessage(
+          name == null || name.isEmpty
+              ? 'You already have an active plan.'
+              : 'You already have an active $name plan.',
+        );
+        return;
+      }
+
+      // A rejected trial is not a purchase. Refresh and stay on Packages.
+      // Do not open the dashboard or a receipt.
+      final read = await Repository().readDoctorEntitlement();
+      if (!mounted) return;
+      setState(() {
+        entitlementRead = read;
+        activatingPlanId = null;
+      });
+      _showMessage(
+        'The trial was not started. ${e.toString().replaceFirst('Exception: ', '')}',
+      );
+    }
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), duration: const Duration(seconds: 5)),
+    );
+  }
+
+  void _onPlanAction(PlanModel plan) {
+    if (_purchaseBlocked(plan)) return;
+
+    // Previous button always opened Checkout, including a free trial:
+    // Navigator.push(context, MaterialPageRoute(
+    //   builder: (context) => Checkout(selectedPlan: plan),
+    // ));
+    if (plan.effectivePrice == 0 && plan.planCode.toLowerCase() != 'enterprise') {
+      _activateWithoutPayment(plan);
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => Checkout(selectedPlan: plan),
+      ),
+    ).then((_) => _loadPlans());
   }
 
   @override
@@ -149,10 +306,12 @@ class _SubscriptionScreen1State extends State<SubscriptionScreen1> {
         50,
       ),
 
-      itemCount: allPlans.length,
+      itemCount: allPlans.length + 1,
 
       itemBuilder: (context, index) {
-        final plan = allPlans[index];
+        if (index == 0) return _entitlementBanner();
+
+        final plan = allPlans[index - 1];
 
         final bool isEnterprise =
             plan.planCode.toLowerCase().contains("enterprise");
@@ -544,23 +703,11 @@ class _SubscriptionScreen1State extends State<SubscriptionScreen1> {
                     children: [
 
                       _actionButton(
-                        plan.planCode.toLowerCase() == "enterprise"
-    ? "Talk to us"
-    : "Proceed with ${plan.formattedPrice}",
-
-                        primaryTeal,
-
-                        () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  Checkout(
-                                selectedPlan: plan,
-                              ),
-                            ),
-                          );
-                        },
+                        activatingPlanId == plan.id
+                            ? 'Starting...'
+                            : _buttonLabel(plan),
+                        _purchaseBlocked(plan) ? Colors.grey : primaryTeal,
+                        () => _onPlanAction(plan),
                       ),
 
                       if (plan.isActive) ...[
@@ -600,6 +747,62 @@ class _SubscriptionScreen1State extends State<SubscriptionScreen1> {
   // =========================================================
   // BUTTON
   // =========================================================
+
+  Widget _entitlementBanner() {
+    final read = entitlementRead;
+    if (read == null) return const SizedBox.shrink();
+
+    if (read.result == EntitlementFetchResult.network ||
+        read.result == EntitlementFetchResult.malformed) {
+      return _statusCard(
+        'Your current plan could not be checked. Purchases stay closed until it can.',
+        action: TextButton(onPressed: _loadPlans, child: const Text('Retry')),
+      );
+    }
+
+    final current = read.snapshot;
+    if (current == null || !current.hasEntitlement) {
+      return _statusCard(
+        'No current plan. The server decides if a trial is still available. '
+        'A trial does not ask for a card. A paid plan does.',
+      );
+    }
+
+    final expiry = current.expiresAt;
+    final expiryText = expiry == null
+        ? ''
+        : 'Expires ${expiry.day}-${_month(expiry.month)}-${expiry.year}. ';
+
+    return _statusCard(
+      '${current.statusLabel}. $expiryText'
+      '${EntitlementHelper.formatSeconds(current.remainingSeconds)} left '
+      'of ${EntitlementHelper.formatSeconds(current.allocatedSeconds)}.',
+    );
+  }
+
+  String _month(int month) {
+    const names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return names[month - 1];
+  }
+
+  Widget _statusCard(String text, {Widget? action}) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF4F7F8),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(text, style: const TextStyle(fontSize: 13, height: 1.4)),
+          if (action != null) action,
+        ],
+      ),
+    );
+  }
 
   Widget _actionButton(
     String label,

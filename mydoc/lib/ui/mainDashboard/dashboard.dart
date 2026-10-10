@@ -16,6 +16,8 @@ import '../../ui/my_consultations/my_encounters_viewmodel.dart';
 import '../../utils/appDialog.dart';
 import '../../utils/colors.dart';
 import '../../routes/routs_name.dart';
+import '../../repository/Repository.dart';
+import '../../utils/entitlement_helper.dart';
 import '../../utils/hive_storage.dart';
 import '../../utils/noInternet.dart';
 import '../../utils/utils.dart';
@@ -55,6 +57,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     super.initState();
     myEncounterViewModel.getEncounters();
     _resetToCurrentWeek();
+    Repository().readDoctorEntitlement();
   }
 
   void _resetToCurrentWeek() {
@@ -94,7 +97,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       children: [
         // 🔹 STATIC HEADER
         const Padding(
-          padding: EdgeInsets.only(left: 16.0, bottom: 10.0, top: 10),
+          padding: EdgeInsets.only(left: 16.0, bottom: 4.0, top: 10),
           child: Text(
             "Clinical Insights Dashboard",
             style: TextStyle(
@@ -102,6 +105,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
               fontWeight: FontWeight.w900,
               color: Colorprimary,
             ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(left: 16, right: 16, bottom: 10),
+          child: ValueListenableBuilder<EntitlementSnapshot?>(
+            valueListenable: EntitlementHelper.display,
+            builder: (context, snapshot, _) {
+              if (snapshot == null || !snapshot.hasEntitlement) {
+                return const Text(
+                  'No current plan',
+                  style: TextStyle(fontSize: 13, color: Colors.black54),
+                );
+              }
+              return Text(
+                '${snapshot.statusLabel} · ${EntitlementHelper.formatSeconds(snapshot.remainingSeconds)} left',
+                style: const TextStyle(fontSize: 13, color: Colors.black54),
+              );
+            },
           ),
         ),
 

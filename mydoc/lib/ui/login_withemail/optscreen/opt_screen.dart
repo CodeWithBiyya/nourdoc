@@ -1345,6 +1345,7 @@ import 'package:medicalai/utils/hive_storage.dart';
 import 'package:medicalai/utils/utils.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
 import 'package:medicalai/utils/entitlement_helper.dart';
+import 'package:medicalai/repository/Repository.dart';
 import '../../../routes/routs_name.dart';
 import '../login_with_email_viewmodel.dart'; // Ensure this ViewModel matches the new logic
 import 'otp_viewmodel.dart';
@@ -1565,31 +1566,36 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                                 utils.toastMessage("Verifying account...");
 
 
-                                final optVM = OptViewModel();
-                                dynamic subStatus = await optVM.checkSubscriptionStatus(_email.trim().toLowerCase(), _token);
+                                // Previous check:
+                                // final optVM = OptViewModel();
+                                // dynamic subStatus = await optVM.checkSubscriptionStatus(_email.trim().toLowerCase(), _token);
+                                // if (EntitlementHelper.isEnrolled(subStatus)) {
+                                //   Navigator.pushReplacementNamed(context, RouteNames.dashboard);
+                                // } else {
+                                //   Navigator.pushReplacementNamed(context, RouteNames.subscription_screen);
+                                // }
+                                // A failed status call used to be treated as "no plan"
+                                // only when subStatus was null. It did not stop for a
+                                // network error before navigating.
+                                final read = await Repository().readDoctorEntitlement();
 
-                                if (mounted) {
-                                  bool hasActivePlan = false;
+                                if (!mounted) return;
 
-                                  // 🔹 FIX: Check for 'status' == 'active' instead of 'is_active' == true
-                                  // if (subStatus != null && (subStatus['status'] == 'active' || subStatus['is_active'] == true)) {
-                                  //   hasActivePlan = true;
-                                  // }
-
-                                  if (EntitlementHelper.isEnrolled(subStatus)) {
-  hasActivePlan = true;
-}
-
-                                  if (hasActivePlan) {
-                                    // Plan found -> Go to Dashboard
-                                    print("Plan is active, navigating to Dashboard");
-                                    Navigator.pushReplacementNamed(context, RouteNames.dashboard);
-                                  } else {
-                                    // No Plan -> Go to Subscription
-                                    print("No active plan found, navigating to Subscription");
-                                    Navigator.pushReplacementNamed(context, RouteNames.subscription_screen);
-                                  }
+                                if (read.result == EntitlementFetchResult.network ||
+                                    read.result == EntitlementFetchResult.malformed) {
+                                  utils.toastMessage(
+                                    "Could not verify your plan. Try again.",
+                                  );
+                                  return;
                                 }
+
+                                final hasPlan = read.snapshot?.hasEntitlement ?? false;
+                                Navigator.pushReplacementNamed(
+                                  context,
+                                  hasPlan
+                                      ? RouteNames.dashboard
+                                      : RouteNames.subscription_screen,
+                                );
                               } else {
                                 Navigator.pushReplacementNamed(context, RouteNames.login_with_email);
                               }

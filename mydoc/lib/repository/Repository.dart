@@ -10,6 +10,7 @@ import '../data/network/base_api_services.dart';
 import '../model/BookedPatientData.dart';
 import '../model/EncounterListModel.dart';
 import '../services/app_url.dart';
+import '../utils/entitlement_helper.dart';
 import '../utils/hive_storage.dart';
 
 class Repository {
@@ -356,6 +357,26 @@ class Repository {
       return await _apiService.getGetResponse(url, token);
     } catch (e) {
       rethrow;
+    }
+  }
+
+  /// Current entitlement. Network failures are not treated as "no plan".
+  Future<EntitlementRead> readDoctorEntitlement() async {
+    final email = (HiveStorage.getEmail() ?? '').trim().toLowerCase();
+    final token = HiveStorage.getToken() ?? '';
+
+    if (email.isEmpty || token.isEmpty) {
+      return EntitlementRead.malformed;
+    }
+
+    try {
+      final raw = await getEntitlementStatusApi(email, token)
+          .timeout(const Duration(seconds: 15));
+      final read = EntitlementHelper.interpret(raw);
+      EntitlementHelper.publish(read);
+      return read;
+    } catch (e) {
+      return EntitlementRead.network;
     }
   }
   

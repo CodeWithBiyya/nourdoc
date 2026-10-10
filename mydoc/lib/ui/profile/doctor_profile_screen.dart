@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl_phone_field/countries.dart' as intl_data;
 import 'package:intl_phone_field/intl_phone_field.dart';
+import 'package:medicalai/repository/Repository.dart';
 import 'package:medicalai/routes/routs_name.dart';
 import 'package:medicalai/ui/profile/doctor_profile_viewmodel.dart';
 import 'package:medicalai/utils/colors.dart';
@@ -413,7 +414,20 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                                 ]);
 
                                 utils.toastMessage("Registered successfully");
-                                Navigator.pushNamedAndRemoveUntil(context, RouteNames.dashboard, (route) => false);
+                                // Previous line. Registration always opened the dashboard
+                                // and did not read the entitlement:
+                                // Navigator.pushNamedAndRemoveUntil(context, RouteNames.dashboard, (route) => false);
+                                if (!mounted) return;
+                                final read = await Repository().readDoctorEntitlement();
+                                if (!mounted) return;
+                                final hasPlan = read.snapshot?.hasEntitlement ?? false;
+                                Navigator.pushNamedAndRemoveUntil(
+                                  context,
+                                  hasPlan
+                                      ? RouteNames.dashboard
+                                      : RouteNames.subscription_screen,
+                                  (route) => false,
+                                );
                               } else {
                                 utils.toastMessage(responses != null ? (responses["message"] ?? "Failed") : "Error");
                               }

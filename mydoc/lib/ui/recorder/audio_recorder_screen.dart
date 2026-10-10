@@ -19,6 +19,7 @@ import '../../main.dart';
 import '../../model/pending_consultation.dart';
 import '../../repository/Repository.dart';
 import '../../utils/appDialog.dart';
+import '../../utils/entitlement_helper.dart';
 import '../../utils/utils.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:audioplayers/audioplayers.dart';
@@ -360,6 +361,11 @@ debugPrint("========================================");
         _isVerifying = false;
       });
 
+      final refreshed = await _repository.readDoctorEntitlement();
+      final remaining = refreshed.snapshot == null
+          ? ''
+          : EntitlementHelper.formatSeconds(refreshed.snapshot!.remainingSeconds);
+
       Navigator.pushNamedAndRemoveUntil(
         context,
         RouteNames.acknowledgment_screen,
@@ -372,6 +378,7 @@ debugPrint("========================================");
             _minutes,
             _seconds,
           ),
+          "remaining_usage": remaining,
         },
       );
     }
@@ -442,6 +449,18 @@ debugPrint("========================================");
         token: HiveStorage.getToken() ?? "", isSyncing: false,
       );
       int hiveKey = await HiveStorage.addToOutbox(pending);
+
+      final access = await utils.requireProtectedAccess(
+        context,
+        upcomingSeconds: pending.durationSeconds,
+      );
+      if (access == null || !mounted) {
+        _isUploadingRightNow = false;
+        if (mounted) {
+          utils.toastMessage('Saved in Outbox. It was not uploaded.');
+        }
+        return;
+      }
 
       // 2. Network Check
       if (await _repository.checkServerHealth()) {
@@ -543,6 +562,8 @@ debugPrint("========================================");
   }
 
   Future<void> _startRecording() async {
+    final access = await utils.requireProtectedAccess(context);
+    if (access == null || !mounted) return;
     if (!await _recorder.hasPermission()) return;
     _remainingSeconds = _maxDurationMinutes * 60;
     _isRecording = true;

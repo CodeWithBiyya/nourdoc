@@ -4,9 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:medicalai/ui/queueingList/queue_list_viewmodel.dart';
 import 'package:provider/provider.dart';
 import '../../model/pending_consultation.dart';
+import '../../repository/Repository.dart';
 import '../../routes/routs_name.dart';
 import '../../utils/colors.dart';
 import '../../utils/appDialog.dart';
+import '../../utils/entitlement_helper.dart';
 import '../../utils/hive_storage.dart';
 import '../../utils/noInternet.dart';
 import '../../utils/utils.dart';
@@ -35,6 +37,31 @@ class _OutboxListScreenState extends State<OutboxListScreen> {
       RouteNames.consultationSelection,
           (route) => route.settings.name == RouteNames.dashboard,
     );
+  }
+
+  /// The 5-report screen is a local feedback gate. It must not override a
+  /// usable plan: not expired and remaining_seconds > 0.
+  Future<void> _openOutboxItem(dynamic hiveKey, String patientName) async {
+    if (HiveStorage.getServerBatchCount() < HiveStorage.batchLimit) {
+      _showConfirmUploadDialog(hiveKey, patientName);
+      return;
+    }
+
+    final read = await Repository().readDoctorEntitlement();
+    if (!mounted) return;
+
+    if (read.snapshot?.canUseProtectedFeatures == true) {
+      _showConfirmUploadDialog(hiveKey, patientName);
+      return;
+    }
+
+    if (read.result == EntitlementFetchResult.network ||
+        read.result == EntitlementFetchResult.malformed) {
+      utils.toastMessage('Your plan could not be checked. Nothing was uploaded.');
+      return;
+    }
+
+    Navigator.pushNamed(context, RouteNames.free_trial);
   }
 
   // 🚩 NEW: Updated to handle the specific loading state
@@ -97,12 +124,7 @@ class _OutboxListScreenState extends State<OutboxListScreen> {
       padding: const EdgeInsets.only(bottom: 12.0),
       child: GestureDetector(
         onTap: isThisItemChecking ? null : () {
-          int serverCount = HiveStorage.getServerBatchCount();
-          if (serverCount >= 5) {
-            Navigator.pushNamed(context, RouteNames.free_trial);
-          } else {
-            _showConfirmUploadDialog(hiveKey, patient.patientName);
-          }
+          _openOutboxItem(hiveKey, patient.patientName);
         },
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),

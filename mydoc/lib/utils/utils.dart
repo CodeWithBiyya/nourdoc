@@ -6,9 +6,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:medicalai/repository/Repository.dart';
-import 'package:medicalai/utils/hive_storage.dart';
 import 'package:medicalai/utils/appDialog.dart';
 import 'package:medicalai/routes/routs_name.dart';
+import 'package:medicalai/utils/entitlement_helper.dart';
 
 class utils {
   // 🟢 FIXED: Added Null safety and default values
@@ -96,13 +96,79 @@ class utils {
     }
   }
 
-  static Future<bool> checkEntitlementAndLimit(BuildContext context) async {
+  /// Loads the entitlement and returns it only when protected use is allowed.
+  /// A network or unreadable response does not grant access.
+  ///
+  /// [upcomingSeconds] is the audio about to be uploaded, in seconds.
+  /// If it is longer than the remaining plan time, the doctor can still
+  /// continue: the backend decides how much time is used.
+  static Future<EntitlementSnapshot?> requireProtectedAccess(
+    BuildContext context, {
+    int? upcomingSeconds,
+  }) async {
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => const Center(child: CupertinoActivityIndicator(radius: 20)),
     );
 
+    final read = await Repository().readDoctorEntitlement();
+    if (context.mounted) Navigator.pop(context);
+    if (!context.mounted) return null;
+
+    if (read.result == EntitlementFetchResult.network) {
+      await showAppDialog(
+        context: context,
+        icon: Icons.wifi_off,
+        title: 'Could not verify plan',
+        content: 'Your plan could not be checked. Nothing was started. Try again when you are online.',
+        primaryText: 'OK',
+        onPrimary: () => Navigator.pop(context),
+      );
+      return null;
+    }
+
+    final snapshot = read.snapshot;
+    if (snapshot == null || !snapshot.canUseProtectedFeatures) {
+      _showUpgradeDialog(
+        context,
+        snapshot?.blockReason ?? 'Your plan could not be read. Try again.',
+      );
+      return null;
+    }
+
+    if (upcomingSeconds != null && upcomingSeconds > snapshot.remainingSeconds) {
+      final proceed = await showAppDialog<bool>(
+        context: context,
+        icon: Icons.timer_outlined,
+        title: 'Longer than plan time',
+        content:
+            'This recording is ${EntitlementHelper.formatSeconds(upcomingSeconds)}. '
+            'Your plan has ${EntitlementHelper.formatSeconds(snapshot.remainingSeconds)} left. '
+            'The server decides how much time is used.',
+        primaryText: 'Upload anyway',
+        onPrimary: () => Navigator.pop(context, true),
+        secondaryText: 'Not now',
+        onSecondary: () => Navigator.pop(context, false),
+      );
+      if (proceed != true) return null;
+    }
+
+    return snapshot;
+  }
+
+  static Future<bool> checkEntitlementAndLimit(BuildContext context) async {
+    final snapshot = await requireProtectedAccess(context);
+    return snapshot != null;
+  }
+
+  /*
+  Previous check. It looked for status == "active" and remaining_minutes,
+  then still returned true, so recording continued. A failed request also
+  returned true.
+
+  static Future<bool> checkEntitlementAndLimit(BuildContext context) async {
+    showDialog(...loader...);
     try {
       final String doctorId = (HiveStorage.getEmail() ?? "").trim().toLowerCase();
       final String token = HiveStorage.getToken() ?? "";
@@ -110,55 +176,45 @@ class utils {
         Navigator.pop(context);
         return false;
       }
-
       final status = await Repository().getEntitlementStatusApi(doctorId, token).timeout(const Duration(seconds: 15));
-      debugPrint("========== ENTITLEMENT STATUS ==========");
-debugPrint("Doctor: $doctorId");
-debugPrint("Response: $status");
-debugPrint("=========================================");
-      print("GET ENTITLEMENT STATUS API RESPONSE: $status");
-      Navigator.pop(context); // Close loading dialog
-
-      if (status == null) return true; // Fail-safe: allow on server failure
-
+      Navigator.pop(context);
+      if (status == null) return true;
       final data = (status is Map && status.containsKey('response')) ? status['response'] : status;
-
       final statusStr = data['status'] ?? '';
-
       if (statusStr != 'active') {
         _showUpgradeDialog(context, "No active plan or plan has expired. Please select a package to continue.");
         // return false;
         return true;
       }
-
       final num remainingMinutes = data['remaining_minutes'] ?? 0;
-
       if (remainingMinutes <= 0) {
         _showUpgradeDialog(context, "You have exhausted your plan minutes. Please upgrade to a paid plan to continue.");
         // return false;
         return true;
       }
-
       return true;
     } catch (e) {
-      print("Error checking entitlement: $e");
-      Navigator.pop(context); // Close loading dialog
-      return true; // Fail-safe
+      Navigator.pop(context);
+      return true;
     }
   }
+
+  The dialog button used to open RouteNames.upgrade ("Upgrade Now").
+  It now opens RouteNames.subscription_screen ("View plans").
+  */
 
   static void _showUpgradeDialog(BuildContext context, String message) {
     showAppDialog(
       context: context,
       icon: Icons.lock_outline,
-      title: "Limit Reached",
+      title: 'Plan limit',
       content: message,
-      primaryText: "Upgrade Now",
+      primaryText: 'View plans',
       onPrimary: () {
-        Navigator.pop(context); // Close dialog
-        Navigator.pushNamed(context, RouteNames.upgrade);
+        Navigator.pop(context);
+        Navigator.pushNamed(context, RouteNames.subscription_screen);
       },
-      secondaryText: "Cancel",
+      secondaryText: 'Cancel',
       onSecondary: () => Navigator.pop(context),
     );
   }
