@@ -1,8 +1,8 @@
 
 import 'package:flutter/material.dart';
-import '../../model/pending_consultation.dart';
-import '../../utils/hive_storage.dart';
-import '../../repository/Repository.dart'; // 🚩 Import your repository
+import '../../core/models/pending_consultation.dart';
+import '../../core/storage/hive_storage.dart';
+import '../../core/repository/Repository.dart'; // 🚩 Import your repository
 
 
 class OutboxViewModel extends ChangeNotifier {
@@ -49,9 +49,9 @@ class OutboxViewModel extends ChangeNotifier {
 
 
 // import 'package:flutter/material.dart';
-// import '../../model/pending_consultation.dart';
-// import '../../utils/hive_storage.dart';
-// import '../../repository/Repository.dart'; // 🚩 Import your repository
+// import '../../core/models/pending_consultation.dart';
+// import '../../core/storage/hive_storage.dart';
+// import '../../core/repository/Repository.dart'; // 🚩 Import your repository
 //
 // class OutboxViewModel extends ChangeNotifier {
 //   final Repository _repo = Repository(); // 🚩 Create instance

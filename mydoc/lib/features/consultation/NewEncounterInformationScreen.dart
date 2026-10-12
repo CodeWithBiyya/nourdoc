@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:medicalai/routes/routs_name.dart';
-import 'package:medicalai/utils/colors.dart';
-import 'package:medicalai/utils/utils.dart';
+import 'package:medicalai/app/routes/routs_name.dart';
+import 'package:medicalai/app/theme/colors.dart';
+import 'package:medicalai/core/common/utils.dart';
 import 'package:provider/provider.dart';
-import '../utils/appDialog.dart';
-import '../utils/hive_storage.dart';
+import '../../core/common/appDialog.dart';
+import '../../core/storage/hive_storage.dart';
 import 'consultation_viewmodel.dart';
 import 'package:flutter/services.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';

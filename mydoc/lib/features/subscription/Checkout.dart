@@ -1,5 +1,5 @@
 // import 'package:flutter/material.dart';
-// import '../../model/PlanModel.dart';
+// import '../../core/models/PlanModel.dart';
 // import 'PaymentScreen.dart';
 
 // class Checkout extends StatefulWidget {
@@ -212,7 +212,7 @@
 
 import 'package:flutter/material.dart';
 
-import '../../model/PlanModel.dart';
+import '../../core/models/PlanModel.dart';
 import 'PaymentScreen.dart';
 
 class Checkout extends StatefulWidget {

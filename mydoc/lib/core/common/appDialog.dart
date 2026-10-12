@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'colors.dart';
+import '../../app/theme/colors.dart';
 
 Future<T?> showAppDialog<T>({
   required BuildContext context,

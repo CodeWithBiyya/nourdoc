@@ -8,19 +8,19 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/services.dart';
 import 'package:haptic_feedback/haptic_feedback.dart';
-import 'package:medicalai/ui/consultation_viewmodel.dart';
+import 'package:medicalai/features/consultation/consultation_viewmodel.dart';
 import 'package:record/record.dart';
-import 'package:medicalai/routes/routs_name.dart';
-import 'package:medicalai/utils/colors.dart';
-import 'package:medicalai/utils/hive_storage.dart';
-import 'package:medicalai/services/upload_service.dart'; // 🚩 Ensure this import is correct
+import 'package:medicalai/app/routes/routs_name.dart';
+import 'package:medicalai/app/theme/colors.dart';
+import 'package:medicalai/core/storage/hive_storage.dart';
+import 'package:medicalai/core/services/upload_service.dart'; // 🚩 Ensure this import is correct
 import 'package:wakelock_plus/wakelock_plus.dart';
 import '../../main.dart';
-import '../../model/pending_consultation.dart';
-import '../../repository/Repository.dart';
-import '../../utils/appDialog.dart';
-import '../../utils/entitlement_helper.dart';
-import '../../utils/utils.dart';
+import '../../core/models/pending_consultation.dart';
+import '../../core/repository/Repository.dart';
+import '../../core/common/appDialog.dart';
+import '../../core/common/entitlement_helper.dart';
+import '../../core/common/utils.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:audioplayers/audioplayers.dart';
 

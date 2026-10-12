@@ -3,17 +3,17 @@ import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:medicalai/model/pending_consultation.dart';
-import 'package:medicalai/repository/Repository.dart';
-import 'package:medicalai/routes/routs_name.dart';
-import 'package:medicalai/services/upload_service.dart';
-import 'package:medicalai/utils/colors.dart';
-import 'package:medicalai/utils/hive_storage.dart';
-import 'package:medicalai/utils/entitlement_helper.dart';
-import 'package:medicalai/utils/utils.dart';
+import 'package:medicalai/core/models/pending_consultation.dart';
+import 'package:medicalai/core/repository/Repository.dart';
+import 'package:medicalai/app/routes/routs_name.dart';
+import 'package:medicalai/core/services/upload_service.dart';
+import 'package:medicalai/app/theme/colors.dart';
+import 'package:medicalai/core/storage/hive_storage.dart';
+import 'package:medicalai/core/common/entitlement_helper.dart';
+import 'package:medicalai/core/common/utils.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
-import '../../utils/noInternet.dart';
+import '../../core/common/noInternet.dart';
 
 class ManualUploadProgressScreen extends StatefulWidget {
   const ManualUploadProgressScreen({super.key});

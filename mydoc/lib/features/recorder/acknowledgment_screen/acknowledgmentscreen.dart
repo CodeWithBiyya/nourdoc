@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:medicalai/routes/routs_name.dart';
-import 'package:medicalai/utils/colors.dart';
-import '../../../utils/hive_storage.dart';
+import 'package:medicalai/app/routes/routs_name.dart';
+import 'package:medicalai/app/theme/colors.dart';
+import '../../../core/storage/hive_storage.dart';
 
 class AcknowledgmentScreen extends StatelessWidget {
   const AcknowledgmentScreen({super.key});

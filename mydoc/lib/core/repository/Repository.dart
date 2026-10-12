@@ -3,15 +3,15 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import 'package:flutter/foundation.dart';
-import 'package:medicalai/model/encounter_information_model.dart';
+import 'package:medicalai/core/models/encounter_information_model.dart';
 
-import '../data/network/Network_api_service.dart';
-import '../data/network/base_api_services.dart';
-import '../model/BookedPatientData.dart';
-import '../model/EncounterListModel.dart';
+import '../network/Network_api_service.dart';
+import '../network/base_api_services.dart';
+import '../models/BookedPatientData.dart';
+import '../models/EncounterListModel.dart';
 import '../services/app_url.dart';
-import '../utils/entitlement_helper.dart';
-import '../utils/hive_storage.dart';
+import '../common/entitlement_helper.dart';
+import '../storage/hive_storage.dart';
 
 class Repository {
   final BaseApiService _apiService = NetworkApiService();

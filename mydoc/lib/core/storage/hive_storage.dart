@@ -1,5 +1,5 @@
 import 'package:hive_flutter/hive_flutter.dart';
-import '../model/pending_consultation.dart';
+import '../models/pending_consultation.dart';
 
 class HiveStorage {
   static late Box _box;

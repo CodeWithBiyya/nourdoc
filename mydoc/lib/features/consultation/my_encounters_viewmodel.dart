@@ -2,10 +2,10 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 
-import '../../data/response/api_response.dart';
-import '../../model/EncounterListModel.dart';
-import '../../repository/Repository.dart';
-import '../../utils/hive_storage.dart';
+import '../../core/network/api_response.dart';
+import '../../core/models/EncounterListModel.dart';
+import '../../core/repository/Repository.dart';
+import '../../core/storage/hive_storage.dart';
 
 class MyEncounterViewModel with ChangeNotifier {
   final _myrepo = Repository();

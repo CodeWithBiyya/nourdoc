@@ -10,22 +10,22 @@ import 'package:http/http.dart' as http; // Add this
 
 
 
-import '../../data/response/status.dart';
-import '../../model/EncounterListModel.dart';
-import '../../ui/my_consultations/my_encounters_viewmodel.dart';
-import '../../utils/appDialog.dart';
-import '../../utils/colors.dart';
-import '../../routes/routs_name.dart';
-import '../../repository/Repository.dart';
-import '../../utils/entitlement_helper.dart';
-import '../../utils/hive_storage.dart';
-import '../../utils/noInternet.dart';
-import '../../utils/utils.dart';
-import '../my_consultations/my_encounters.dart';
-import '../widgets/BottomLoginWidget.dart';
-import '../widgets/doctorinfo_dialogbox.dart';
-import '../../services/app_url.dart';
-import '../../ui/Subscription_screens/Subscription_screen_1.dart';
+import '../../core/network/status.dart';
+import '../../core/models/EncounterListModel.dart';
+import '../consultation/my_encounters_viewmodel.dart';
+import '../../core/common/appDialog.dart';
+import '../../app/theme/colors.dart';
+import '../../app/routes/routs_name.dart';
+import '../../core/repository/Repository.dart';
+import '../../core/common/entitlement_helper.dart';
+import '../../core/storage/hive_storage.dart';
+import '../../core/common/noInternet.dart';
+import '../../core/common/utils.dart';
+import '../consultation/my_encounters.dart';
+import '../../core/widgets/BottomLoginWidget.dart';
+import '../../core/widgets/doctorinfo_dialogbox.dart';
+import '../../core/services/app_url.dart';
+import '../subscription/Subscription_screen_1.dart';
 
 
 class DashboardScreen extends StatefulWidget {

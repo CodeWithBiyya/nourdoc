@@ -3,8 +3,8 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 import 'package:http/http.dart' as http;
-import '../model/pending_consultation.dart';
-import '../utils/hive_storage.dart';
+import '../models/pending_consultation.dart';
+import '../storage/hive_storage.dart';
 import 'app_url.dart';
 
 class SyncService {

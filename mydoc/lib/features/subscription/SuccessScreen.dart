@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../model/PlanModel.dart';
-import '../../routes/routs_name.dart';
+import '../../core/models/PlanModel.dart';
+import '../../app/routes/routs_name.dart';
 
 class SuccessScreen extends StatelessWidget {
   final PlanModel selectedPlan;

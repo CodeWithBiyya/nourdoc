@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../routes/routs_name.dart';
-import '../../utils/hive_storage.dart';
+import '../../app/routes/routs_name.dart';
+import '../storage/hive_storage.dart';
 
 class AppBarActions extends StatelessWidget {
   final Color iconColor;

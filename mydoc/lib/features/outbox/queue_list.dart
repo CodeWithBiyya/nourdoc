@@ -1,17 +1,17 @@
 
 
 import 'package:flutter/material.dart';
-import 'package:medicalai/ui/queueingList/queue_list_viewmodel.dart';
+import 'package:medicalai/features/outbox/queue_list_viewmodel.dart';
 import 'package:provider/provider.dart';
-import '../../model/pending_consultation.dart';
-import '../../repository/Repository.dart';
-import '../../routes/routs_name.dart';
-import '../../utils/colors.dart';
-import '../../utils/appDialog.dart';
-import '../../utils/entitlement_helper.dart';
-import '../../utils/hive_storage.dart';
-import '../../utils/noInternet.dart';
-import '../../utils/utils.dart';
+import '../../core/models/pending_consultation.dart';
+import '../../core/repository/Repository.dart';
+import '../../app/routes/routs_name.dart';
+import '../../app/theme/colors.dart';
+import '../../core/common/appDialog.dart';
+import '../../core/common/entitlement_helper.dart';
+import '../../core/storage/hive_storage.dart';
+import '../../core/common/noInternet.dart';
+import '../../core/common/utils.dart';
 import 'package:flutter/cupertino.dart';
 
 

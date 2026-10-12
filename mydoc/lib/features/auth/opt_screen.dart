@@ -1,13 +1,13 @@
 // import 'dart:async';
 // import 'package:flutter/foundation.dart';
 // import 'package:flutter/material.dart';
-// import 'package:medicalai/utils/colors.dart';
-// import 'package:medicalai/utils/hive_storage.dart';
-// import 'package:medicalai/utils/utils.dart';
+// import 'package:medicalai/app/theme/colors.dart';
+// import 'package:medicalai/core/storage/hive_storage.dart';
+// import 'package:medicalai/core/common/utils.dart';
 // import 'package:pin_code_fields/pin_code_fields.dart';
 
-// import '../../../routes/routs_name.dart';
-// import '../login_with_email_viewmodel.dart'; // Ensure this ViewModel matches the new logic
+// import '../../app/routes/routs_name.dart';
+// import 'login_with_email_viewmodel.dart'; // Ensure this ViewModel matches the new logic
 // import 'otp_viewmodel.dart';
 
 // class AuthenticationScreen extends StatefulWidget {
@@ -302,12 +302,12 @@
 // import 'dart:async';
 
 // import 'package:flutter/material.dart';
-// import 'package:medicalai/utils/hive_storage.dart';
-// import 'package:medicalai/utils/utils.dart';
+// import 'package:medicalai/core/storage/hive_storage.dart';
+// import 'package:medicalai/core/common/utils.dart';
 // import 'package:pin_code_fields/pin_code_fields.dart';
 
-// import '../../../routes/routs_name.dart';
-// import '../login_with_email_viewmodel.dart';
+// import '../../app/routes/routs_name.dart';
+// import 'login_with_email_viewmodel.dart';
 // import 'otp_viewmodel.dart';
 
 // class AuthenticationScreen extends StatefulWidget {
@@ -752,13 +752,13 @@
 // import 'dart:async';
 
 // import 'package:flutter/material.dart';
-// import 'package:medicalai/utils/colors.dart';
-// import 'package:medicalai/utils/hive_storage.dart';
-// import 'package:medicalai/utils/utils.dart';
+// import 'package:medicalai/app/theme/colors.dart';
+// import 'package:medicalai/core/storage/hive_storage.dart';
+// import 'package:medicalai/core/common/utils.dart';
 // import 'package:pin_code_fields/pin_code_fields.dart';
 
-// import '../../../routes/routs_name.dart';
-// import '../login_with_email_viewmodel.dart';
+// import '../../app/routes/routs_name.dart';
+// import 'login_with_email_viewmodel.dart';
 // import 'otp_viewmodel.dart';
 
 // class AuthenticationScreen extends StatefulWidget {
@@ -1340,14 +1340,14 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:medicalai/utils/colors.dart';
-import 'package:medicalai/utils/hive_storage.dart';
-import 'package:medicalai/utils/utils.dart';
+import 'package:medicalai/app/theme/colors.dart';
+import 'package:medicalai/core/storage/hive_storage.dart';
+import 'package:medicalai/core/common/utils.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
-import 'package:medicalai/utils/entitlement_helper.dart';
-import 'package:medicalai/repository/Repository.dart';
-import '../../../routes/routs_name.dart';
-import '../login_with_email_viewmodel.dart'; // Ensure this ViewModel matches the new logic
+import 'package:medicalai/core/common/entitlement_helper.dart';
+import 'package:medicalai/core/repository/Repository.dart';
+import '../../app/routes/routs_name.dart';
+import 'login_with_email_viewmodel.dart'; // Ensure this ViewModel matches the new logic
 import 'otp_viewmodel.dart';
 
 class AuthenticationScreen extends StatefulWidget {

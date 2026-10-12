@@ -2,13 +2,13 @@
 // import 'package:flutter/cupertino.dart';
 // import 'package:flutter/material.dart';
 // // import 'package:flutter_foreground_task/flutter_foreground_task.dart';
-// // import 'package:medicalai/services/background_queue_coordinator.dart';
-// import 'package:medicalai/utils/colors.dart';
-// import 'package:medicalai/utils/hive_storage.dart';
-// import 'package:medicalai/utils/appDialog.dart'; // 🚩 Ensure this is the correct path to your dialog file
+// // import 'package:medicalai/core/services/background_queue_coordinator.dart';
+// import 'package:medicalai/app/theme/colors.dart';
+// import 'package:medicalai/core/storage/hive_storage.dart';
+// import 'package:medicalai/core/common/appDialog.dart'; // 🚩 Ensure this is the correct path to your dialog file
 // import 'package:permission_handler/permission_handler.dart';
-// import '../../routes/routs_name.dart';
-// import '../../repository/Repository.dart';
+// import '../../app/routes/routs_name.dart';
+// import '../../core/repository/Repository.dart';
 
 // class splashscreen extends StatefulWidget {
 //   @override
@@ -166,14 +166,14 @@ import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 // import 'package:flutter_foreground_task/flutter_foreground_task.dart';
-// import 'package:medicalai/services/background_queue_coordinator.dart';
-import 'package:medicalai/utils/colors.dart';
-import 'package:medicalai/utils/hive_storage.dart';
-import 'package:medicalai/utils/appDialog.dart'; // 🚩 Ensure this is the correct path to your dialog file
+// import 'package:medicalai/core/services/background_queue_coordinator.dart';
+import 'package:medicalai/app/theme/colors.dart';
+import 'package:medicalai/core/storage/hive_storage.dart';
+import 'package:medicalai/core/common/appDialog.dart'; // 🚩 Ensure this is the correct path to your dialog file
 import 'package:permission_handler/permission_handler.dart';
-import '../../routes/routs_name.dart';
-import 'package:medicalai/utils/entitlement_helper.dart';
-import '../../repository/Repository.dart';
+import '../../app/routes/routs_name.dart';
+import 'package:medicalai/core/common/entitlement_helper.dart';
+import '../../core/repository/Repository.dart';
 
 class splashscreen extends StatefulWidget {
   @override

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 // Assuming Colorprimary is defined in your colors file
-import 'package:medicalai/utils/colors.dart';
-import 'package:medicalai/routes/routs_name.dart';
+import 'package:medicalai/app/theme/colors.dart';
+import 'package:medicalai/app/routes/routs_name.dart';
 
 class UpgradeScreen extends StatelessWidget {
   const UpgradeScreen({super.key});

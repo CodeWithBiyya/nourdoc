@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import '../../model/PlanModel.dart';
-import '../../repository/Repository.dart';
-import '../../services/PlanRequestApiService.dart';
-import '../../services/Pricing_api_service.dart';
-import '../../utils/entitlement_helper.dart';
-import '../../utils/hive_storage.dart';
-import '../../routes/routs_name.dart';
+import '../../core/models/PlanModel.dart';
+import '../../core/repository/Repository.dart';
+import '../../core/services/PlanRequestApiService.dart';
+import '../../core/services/pricing_api_service.dart';
+import '../../core/common/entitlement_helper.dart';
+import '../../core/storage/hive_storage.dart';
+import '../../app/routes/routs_name.dart';
 import 'Checkout.dart';
 
 class SubscriptionScreen1 extends StatefulWidget {

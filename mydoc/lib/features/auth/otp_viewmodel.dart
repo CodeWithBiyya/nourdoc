@@ -1,8 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 
-import '../../../repository/Repository.dart';
-import '../../../utils/utils.dart';
+import '../../core/repository/Repository.dart';
+import '../../core/common/utils.dart';
 
 class OptViewModel with ChangeNotifier {
   final _myRepo = Repository();

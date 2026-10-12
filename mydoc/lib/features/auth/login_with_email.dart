@@ -4,12 +4,12 @@ import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:medicalai/utils/colors.dart';
+import 'package:medicalai/app/theme/colors.dart';
 
-import '../../routes/routs_name.dart';
-import '../../utils/utils.dart';
+import '../../app/routes/routs_name.dart';
+import '../../core/common/utils.dart';
 import 'login_with_email_viewmodel.dart';
-import '../../utils/hive_storage.dart';
+import '../../core/storage/hive_storage.dart';
 
 class LoginWithEmail extends StatefulWidget {
   @override

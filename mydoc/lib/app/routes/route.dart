@@ -1,28 +1,28 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:medicalai/routes/routs_name.dart';
-import 'package:medicalai/ui/consultation_selection.dart';
-import 'package:medicalai/ui/login_withemail/login_with_email.dart';
-import 'package:medicalai/ui/login_withemail/optscreen/opt_screen.dart';
-import 'package:medicalai/ui/mainDashboard/dashboard.dart';
-import 'package:medicalai/ui/premium_limit/feedback_collection.dart';
-import 'package:medicalai/ui/premium_limit/freeTrial.dart';
-import 'package:medicalai/ui/premium_limit/upgrade.dart';
-import 'package:medicalai/ui/profile/doctor_profile_screen.dart';
-import 'package:medicalai/ui/queueingList/manualuploadScreen.dart';
-import 'package:medicalai/ui/recorder/acknowledgment_screen/acknowledgmentscreen.dart';
-import 'package:medicalai/ui/register/RegisterScreen.dart';
-import 'package:medicalai/ui/splash/splashscreen1.dart';
-import 'package:medicalai/ui/Subscription_screens/Subscription_screen_1.dart';
+import 'package:medicalai/app/routes/routs_name.dart';
+import 'package:medicalai/features/consultation/consultation_selection.dart';
+import 'package:medicalai/features/auth/login_with_email.dart';
+import 'package:medicalai/features/auth/opt_screen.dart';
+import 'package:medicalai/features/dashboard/dashboard.dart';
+import 'package:medicalai/features/feedback/feedback_collection.dart';
+import 'package:medicalai/features/feedback/freeTrial.dart';
+import 'package:medicalai/features/feedback/upgrade.dart';
+import 'package:medicalai/features/profile/doctor_profile_screen.dart';
+import 'package:medicalai/features/outbox/manualuploadScreen.dart';
+import 'package:medicalai/features/recorder/acknowledgment_screen/acknowledgmentscreen.dart';
+import 'package:medicalai/features/auth/RegisterScreen.dart';
+import 'package:medicalai/features/splash/splashscreen1.dart';
+import 'package:medicalai/features/subscription/Subscription_screen_1.dart';
 
 
-import '../ui/NewEncounterInformationScreen.dart';
-import '../ui/findings/ClinicalFindingsScreen.dart';
-import '../ui/login/login_screen.dart';
-import '../ui/my_consultations/my_encounters.dart';
-import '../ui/queueingList/queue_list.dart';
-import '../ui/recorder/audio_recorder_screen.dart';
-import '../ui/splash/splashscreen.dart';
+import '../../features/consultation/NewEncounterInformationScreen.dart';
+import '../../features/findings/ClinicalFindingsScreen.dart';
+import '../../features/auth/login_screen.dart';
+import '../../features/consultation/my_encounters.dart';
+import '../../features/outbox/queue_list.dart';
+import '../../features/recorder/audio_recorder_screen.dart';
+import '../../features/splash/splashscreen.dart';
 
 class Routes {
   static Route<dynamic> generateRoute(RouteSettings settings) {

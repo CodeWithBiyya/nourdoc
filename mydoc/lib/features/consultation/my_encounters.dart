@@ -5,20 +5,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:intl/intl.dart';
-import 'package:medicalai/data/response/status.dart';
-import 'package:medicalai/routes/routs_name.dart';
-import 'package:medicalai/ui/my_consultations/my_encounters_viewmodel.dart';
-import 'package:medicalai/utils/colors.dart';
-import 'package:medicalai/utils/hive_storage.dart';
-import 'package:medicalai/utils/utils.dart';
+import 'package:medicalai/core/network/status.dart';
+import 'package:medicalai/app/routes/routs_name.dart';
+import 'package:medicalai/features/consultation/my_encounters_viewmodel.dart';
+import 'package:medicalai/app/theme/colors.dart';
+import 'package:medicalai/core/storage/hive_storage.dart';
+import 'package:medicalai/core/common/utils.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../utils/noInternet.dart';
-import '../widgets/BottomLoginWidget.dart';
-import '../widgets/appbar_actions_wiget.dart';
-import '../widgets/doctorinfo_dialogbox.dart';
-import '../Subscription_screens/Subscription_screen_1.dart';
+import '../../core/common/noInternet.dart';
+import '../../core/widgets/BottomLoginWidget.dart';
+import '../../core/widgets/appbar_actions_wiget.dart';
+import '../../core/widgets/doctorinfo_dialogbox.dart';
+import '../subscription/Subscription_screen_1.dart';
 
 
 // Optimized: Static formatter to avoid recreation

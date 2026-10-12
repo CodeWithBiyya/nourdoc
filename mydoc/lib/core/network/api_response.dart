@@ -1,7 +1,7 @@
 
 
 
-import 'package:medicalai/data/response/status.dart';
+import 'package:medicalai/core/network/status.dart';
 
 class ApiResponse<T> {
   Status? status;

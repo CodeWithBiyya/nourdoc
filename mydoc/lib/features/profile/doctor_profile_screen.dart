@@ -3,12 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl_phone_field/countries.dart' as intl_data;
 import 'package:intl_phone_field/intl_phone_field.dart';
-import 'package:medicalai/repository/Repository.dart';
-import 'package:medicalai/routes/routs_name.dart';
-import 'package:medicalai/ui/profile/doctor_profile_viewmodel.dart';
-import 'package:medicalai/utils/colors.dart';
-import 'package:medicalai/utils/hive_storage.dart';
-import '../../utils/utils.dart';
+import 'package:medicalai/core/repository/Repository.dart';
+import 'package:medicalai/app/routes/routs_name.dart';
+import 'package:medicalai/features/profile/doctor_profile_viewmodel.dart';
+import 'package:medicalai/app/theme/colors.dart';
+import 'package:medicalai/core/storage/hive_storage.dart';
+import '../../core/common/utils.dart';
 
 class DoctorProfileScreen extends StatefulWidget {
   const DoctorProfileScreen({super.key});

@@ -1,10 +1,10 @@
 import 'package:flutter/cupertino.dart';
 
-import '../data/response/api_response.dart';
-import '../model/BookedPatientData.dart';
-import '../repository/Repository.dart';
-import '../utils/hive_storage.dart';
-import '../utils/noInternet.dart';
+import '../../core/network/api_response.dart';
+import '../../core/models/BookedPatientData.dart';
+import '../../core/repository/Repository.dart';
+import '../../core/storage/hive_storage.dart';
+import '../../core/common/noInternet.dart';
 
 
 class ConsultationViewModel with ChangeNotifier {

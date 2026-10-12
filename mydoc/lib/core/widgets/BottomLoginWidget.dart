@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:medicalai/utils/colors.dart';
-import '../../routes/routs_name.dart';
+import 'package:medicalai/app/theme/colors.dart';
+import '../../app/routes/routs_name.dart';
 
 class BottomLoginWidget extends StatelessWidget {
   // 1. Add variables to accept logic from the parent screen

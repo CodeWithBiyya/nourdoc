@@ -5,10 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:medicalai/repository/Repository.dart';
-import 'package:medicalai/utils/appDialog.dart';
-import 'package:medicalai/routes/routs_name.dart';
-import 'package:medicalai/utils/entitlement_helper.dart';
+import 'package:medicalai/core/repository/Repository.dart';
+import 'package:medicalai/core/common/appDialog.dart';
+import 'package:medicalai/app/routes/routs_name.dart';
+import 'package:medicalai/core/common/entitlement_helper.dart';
 
 class utils {
   // 🟢 FIXED: Added Null safety and default values

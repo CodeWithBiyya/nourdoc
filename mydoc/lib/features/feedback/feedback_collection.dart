@@ -3,14 +3,14 @@ import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:medicalai/data/response/status.dart';
-import 'package:medicalai/ui/my_consultations/my_encounters_viewmodel.dart';
-import 'package:medicalai/utils/colors.dart';
-import 'package:medicalai/utils/hive_storage.dart';
-import 'package:medicalai/utils/utils.dart';
-import '../../model/EncounterListModel.dart';
-import '../../routes/routs_name.dart';
-import '../../utils/noInternet.dart';
+import 'package:medicalai/core/network/status.dart';
+import 'package:medicalai/features/consultation/my_encounters_viewmodel.dart';
+import 'package:medicalai/app/theme/colors.dart';
+import 'package:medicalai/core/storage/hive_storage.dart';
+import 'package:medicalai/core/common/utils.dart';
+import '../../core/models/EncounterListModel.dart';
+import '../../app/routes/routs_name.dart';
+import '../../core/common/noInternet.dart';
 
 class FeedbackCollectionScreen extends StatefulWidget {
   const FeedbackCollectionScreen({super.key});

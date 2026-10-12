@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:medicalai/data/response/status.dart';
-import 'package:medicalai/routes/routs_name.dart';
-import 'package:medicalai/utils/colors.dart';
+import 'package:medicalai/core/network/status.dart';
+import 'package:medicalai/app/routes/routs_name.dart';
+import 'package:medicalai/app/theme/colors.dart';
 import 'package:provider/provider.dart';
-import '../../model/BookedPatientData.dart';
-import '../utils/appDialog.dart';
-import '../utils/hive_storage.dart';
-import '../utils/noInternet.dart';
-import '../utils/utils.dart';
+import '../../core/models/BookedPatientData.dart';
+import '../../core/common/appDialog.dart';
+import '../../core/storage/hive_storage.dart';
+import '../../core/common/noInternet.dart';
+import '../../core/common/utils.dart';
 import 'consultation_viewmodel.dart';
 
 class ConsultationSelectionScreen extends StatefulWidget {

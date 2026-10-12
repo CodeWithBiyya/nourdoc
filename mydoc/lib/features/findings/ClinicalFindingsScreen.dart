@@ -6,16 +6,16 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:just_audio/just_audio.dart';
-import 'package:medicalai/data/response/status.dart';
-import 'package:medicalai/ui/findings/clinical_findings_viewmodel.dart';
-import 'package:medicalai/utils/colors.dart';
-import 'package:medicalai/utils/utils.dart';
+import 'package:medicalai/core/network/status.dart';
+import 'package:medicalai/features/findings/clinical_findings_viewmodel.dart';
+import 'package:medicalai/app/theme/colors.dart';
+import 'package:medicalai/core/common/utils.dart';
 import 'package:open_file/open_file.dart';
 import 'package:provider/provider.dart';
-import '../../model/encounter_information_model.dart';
-import '../../routes/routs_name.dart';
-import '../../services/app_url.dart';
-import '../../utils/generate_pdf.dart';
+import '../../core/models/encounter_information_model.dart';
+import '../../app/routes/routs_name.dart';
+import '../../core/services/app_url.dart';
+import '../../core/common/generate_pdf.dart';
 
 class ClinicalFindingsScreen extends StatefulWidget {
   const ClinicalFindingsScreen({super.key});

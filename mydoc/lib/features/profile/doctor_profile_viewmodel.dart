@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart';
-import 'package:medicalai/utils/hive_storage.dart';
+import 'package:medicalai/core/storage/hive_storage.dart';
 
-import '../../repository/Repository.dart';
-import '../../utils/utils.dart';
+import '../../core/repository/Repository.dart';
+import '../../core/common/utils.dart';
 
 class DoctorProfileViewModel {
   final _myRepo = Repository();

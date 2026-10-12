@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:medicalai/routes/routs_name.dart';
+import 'package:medicalai/app/routes/routs_name.dart';
 
 class FreeTrialLimitScreen extends StatelessWidget {
   const FreeTrialLimitScreen({super.key});

@@ -1,6 +1,6 @@
 import 'package:flutter/cupertino.dart';
-import '../../repository/Repository.dart';
-import '../../utils/noInternet.dart';
+import '../../core/repository/Repository.dart';
+import '../../core/common/noInternet.dart';
 
 class LoginViewModelWithEmail with ChangeNotifier {
   final _myRepo = Repository();

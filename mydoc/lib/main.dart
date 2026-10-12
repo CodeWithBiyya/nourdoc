@@ -1,7 +1,7 @@
 // // import 'package:flutter/material.dart';
-// // import 'package:medicalai/routes/route.dart';
-// // import 'package:medicalai/routes/routs_name.dart';
-// // import 'package:medicalai/utils/hive_storage.dart';
+// // import 'package:medicalai/app/routes/route.dart';
+// // import 'package:medicalai/app/routes/routs_name.dart';
+// // import 'package:medicalai/core/storage/hive_storage.dart';
 // // import 'package:hive_flutter/hive_flutter.dart';
 // //
 // // // 1. GLOBAL KEY DEFINITION
@@ -100,9 +100,9 @@
 
 // // this is perfect instead of white screen isssue
 // import 'package:flutter/material.dart';
-// import 'package:medicalai/routes/route.dart';
-// import 'package:medicalai/routes/routs_name.dart';
-// import 'package:medicalai/utils/hive_storage.dart';
+// import 'package:medicalai/app/routes/route.dart';
+// import 'package:medicalai/app/routes/routs_name.dart';
+// import 'package:medicalai/core/storage/hive_storage.dart';
 // import 'package:hive_flutter/hive_flutter.dart';
 // import '../../main.dart'; // Ensure this points to your root MyApp class
 
@@ -251,10 +251,10 @@ import 'dart:async';
 
 // import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
-import 'package:medicalai/repository/Repository.dart';
-import 'package:medicalai/routes/route.dart';
-import 'package:medicalai/routes/routs_name.dart';
-import 'package:medicalai/utils/hive_storage.dart';
+import 'package:medicalai/core/repository/Repository.dart';
+import 'package:medicalai/app/routes/route.dart';
+import 'package:medicalai/app/routes/routs_name.dart';
+import 'package:medicalai/core/storage/hive_storage.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 // IMPORTANT:

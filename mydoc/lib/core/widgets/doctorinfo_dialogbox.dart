@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:medicalai/utils/colors.dart';
-import 'package:medicalai/utils/hive_storage.dart';
+import 'package:medicalai/app/theme/colors.dart';
+import 'package:medicalai/core/storage/hive_storage.dart';
 
 class DoctorInfoDialog extends StatelessWidget {
   final String imagePath;

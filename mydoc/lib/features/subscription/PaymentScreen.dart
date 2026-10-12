@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../model/PlanModel.dart';
-import '../../routes/routs_name.dart';
-import '../../repository/Repository.dart';
-import '../../services/PlanRequestApiService.dart';
-import '../../utils/entitlement_helper.dart';
-import '../../utils/hive_storage.dart';
+import '../../core/models/PlanModel.dart';
+import '../../app/routes/routs_name.dart';
+import '../../core/repository/Repository.dart';
+import '../../core/services/PlanRequestApiService.dart';
+import '../../core/common/entitlement_helper.dart';
+import '../../core/storage/hive_storage.dart';
 import 'SuccessScreen.dart';
 
 class PaymentScreen extends StatefulWidget {
@@ -187,8 +187,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
     import 'dart:async';
     import 'package:url_launcher/url_launcher.dart';
     import 'package:app_links/app_links.dart';
-    import 'package:medicalai/utils/entitlement_helper.dart';
-    import '../../services/EntitlementApiService.dart';
+    import 'package:medicalai/core/common/entitlement_helper.dart';
+    import '../../core/services/EntitlementApiService.dart';
 
   Fields this block used:
     bool isConfirmingPayment = false;

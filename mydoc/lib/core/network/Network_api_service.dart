@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
 
-import '../app_exceptions.dart';
+import 'app_exceptions.dart';
 import 'base_api_services.dart';
 
 class NetworkApiService extends BaseApiService {

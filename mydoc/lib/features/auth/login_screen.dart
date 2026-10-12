@@ -1,9 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:medicalai/utils/hive_storage.dart';
+import 'package:medicalai/core/storage/hive_storage.dart';
 
-import '../../routes/routs_name.dart';
-import '../../utils/utils.dart';
+import '../../app/routes/routs_name.dart';
+import '../../core/common/utils.dart';
 import 'LoginViewModel.dart';
 
 class LoginScreen extends StatefulWidget {

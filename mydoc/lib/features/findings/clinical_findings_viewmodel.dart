@@ -1,11 +1,11 @@
 import 'package:flutter/foundation.dart';
-import 'package:medicalai/data/response/api_response.dart';
-import 'package:medicalai/model/encounter_information_model.dart';
+import 'package:medicalai/core/network/api_response.dart';
+import 'package:medicalai/core/models/encounter_information_model.dart';
 
-import '../../repository/Repository.dart';
-import '../../utils/hive_storage.dart';
-import '../../utils/noInternet.dart';
-import '../../utils/utils.dart';
+import '../../core/repository/Repository.dart';
+import '../../core/storage/hive_storage.dart';
+import '../../core/common/noInternet.dart';
+import '../../core/common/utils.dart';
 
 class ClinicalFindingsViewModel with ChangeNotifier {
   final _myrepo = Repository();
