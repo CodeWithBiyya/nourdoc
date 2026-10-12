@@ -48,8 +48,7 @@ class BookedPatientData {
       patientName: (patient['name'] ?? "").toString(),
       age: (patient['age'] ?? "").toString(),
       gender: (patient['gender'] ?? "").toString(),
-      patientPhone: (json['patient_phone'] ?? "").toString(), // Check if this is in root or patient object
-
+      patientPhone: (patient['phone_number'] ?? "").toString(),
       // Vitals mapping (Exactly as per your Postman screenshot)
       temp: (vitals['Temperature'] ?? "").toString(),
       pulse: (vitals['Pulse'] ?? "").toString(),
