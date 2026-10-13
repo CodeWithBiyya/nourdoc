@@ -329,27 +329,46 @@ debugPrint("========================================");
     // STEP 7: REMOVE FROM CURRENT PROVIDER UI LIST
     // ============================================================
 
-    if (mounted) {
-      try {
-        final viewModel =
-            Provider.of<ConsultationViewModel>(
-          context,
-          listen: false,
-        );
+    // if (mounted) {
+    //   try {
+    //     final viewModel =
+    //         Provider.of<ConsultationViewModel>(
+    //       context,
+    //       listen: false,
+    //     );
 
-        _log(
-          "Removing booking from Provider UI list: $_bookingId",
-        );
+    //     _log(
+    //       "Removing booking from Provider UI list: $_bookingId",
+    //     );
 
-        viewModel.removeBookedPatient(_bookingId);
+    //     viewModel.removeBookedPatient(_bookingId);
 
-        _log("✅ Booking removed from Provider UI list");
-      } catch (e) {
-        _log(
-          "⚠️ Provider UI removal skipped: $e",
-        );
-      }
-    }
+    //     _log("✅ Booking removed from Provider UI list");
+    //   } catch (e) {
+    //     _log(
+    //       "⚠️ Provider UI removal skipped: $e",
+    //     );
+    //   }
+    // }
+
+    if (mounted && _bookingId.trim().isNotEmpty) {
+  final bookingId = _bookingId.trim();
+
+  // Persist the completed status so it stays hidden after refresh.
+  await HiveStorage.markBookingCompleted(bookingId);
+
+  if (!mounted) return;
+
+  final viewModel = Provider.of<ConsultationViewModel>(
+    context,
+    listen: false,
+  );
+
+  viewModel.removeBookedPatient(bookingId);
+
+  _log('✅ Booking $bookingId marked completed locally');
+}
+
 
     // ============================================================
     // STEP 8: NAVIGATE TO ACKNOWLEDGEMENT
