@@ -256,6 +256,8 @@ import 'package:medicalai/app/routes/route.dart';
 import 'package:medicalai/app/routes/routs_name.dart';
 import 'package:medicalai/core/storage/hive_storage.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:provider/provider.dart';
+import 'package:medicalai/features/consultation/consultation_viewmodel.dart';
 
 // IMPORTANT:
 // Change the import above if your SuccessScreen is located somewhere else.
@@ -288,7 +290,13 @@ Future<void> main() async {
     print("❌ CRITICAL ERROR: $e");
   }
 
-  runApp(const MyApp());
+  // runApp(const MyApp());
+  runApp(
+  ChangeNotifierProvider(
+    create: (_) => ConsultationViewModel(),
+    child: const MyApp(),
+  ),
+);
 }
 
 
