@@ -112,15 +112,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
           child: ValueListenableBuilder<EntitlementSnapshot?>(
             valueListenable: EntitlementHelper.display,
             builder: (context, snapshot, _) {
-              if (snapshot == null || !snapshot.hasEntitlement) {
-                return const Text(
-                  'No current plan',
-                  style: TextStyle(fontSize: 13, color: Colors.black54),
-                );
-              }
-              return Text(
-                '${snapshot.statusLabel} · ${EntitlementHelper.formatSeconds(snapshot.remainingSeconds)} left',
-                style: const TextStyle(fontSize: 13, color: Colors.black54),
+              final label = snapshot == null || !snapshot.hasEntitlement
+                  ? 'No current plan'
+                  : '${snapshot.statusLabel} · ${EntitlementHelper.formatSeconds(snapshot.remainingSeconds)} left';
+              return GestureDetector(
+                onTap: () => Navigator.pushNamed(context, RouteNames.current_plan),
+                child: Text(
+                  label,
+                  style: const TextStyle(fontSize: 13, color: Colors.black54),
+                ),
               );
             },
           ),

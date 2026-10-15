@@ -14,6 +14,7 @@ import 'package:medicalai/features/recorder/acknowledgment_screen/acknowledgment
 import 'package:medicalai/features/auth/RegisterScreen.dart';
 import 'package:medicalai/features/splash/splashscreen1.dart';
 import 'package:medicalai/features/subscription/Subscription_screen_1.dart';
+import 'package:medicalai/features/subscription/current_plan_screen.dart';
 
 
 import '../../features/consultation/NewEncounterInformationScreen.dart';
@@ -58,6 +59,8 @@ class Routes {
         return MaterialPageRoute(builder: (_) => UpgradeScreen());
       case RouteNames.subscription_screen:
         return MaterialPageRoute(builder: (_) => const SubscriptionScreen1());
+      case RouteNames.current_plan:
+        return MaterialPageRoute(builder: (_) => const CurrentPlanScreen());
       case RouteNames.dashboard:
         return MaterialPageRoute(builder: (_) => DashboardScreen());
       case RouteNames.logInScreen:

@@ -28,5 +28,6 @@ class RouteNames {
   static const feedback_collection = "feedback_collection";
   static const String upgrade = "upgrade";
   static const String subscription_screen = "subscription_screen";
+  static const String current_plan = "current_plan";
 
 }

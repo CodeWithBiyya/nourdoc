@@ -230,6 +230,7 @@ class Checkout extends StatefulWidget {
 class _CheckoutState extends State<Checkout> {
   bool isAnnualDiscount = false;
   String selectedMethod = "Google Pay";
+  bool _paymentOpened = false;
 
   final Color primaryColor =
       const Color(0xFF255563);
@@ -558,6 +559,8 @@ class _CheckoutState extends State<Checkout> {
 
       child: ElevatedButton(
         onPressed: () {
+          if (_paymentOpened) return;
+          _paymentOpened = true;
           Navigator.push(
             context,
 
@@ -571,7 +574,9 @@ class _CheckoutState extends State<Checkout> {
                     selectedMethod,
               ),
             ),
-          );
+          ).then((_) {
+            if (mounted) _paymentOpened = false;
+          });
         },
 
         style:

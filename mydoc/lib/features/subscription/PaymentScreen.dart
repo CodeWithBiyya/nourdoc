@@ -7,6 +7,7 @@ import '../../core/services/PlanRequestApiService.dart';
 import '../../core/common/entitlement_helper.dart';
 import '../../core/storage/hive_storage.dart';
 import 'SuccessScreen.dart';
+import 'subscription_guard.dart';
 
 class PaymentScreen extends StatefulWidget {
   final PlanModel selectedPlan;
@@ -85,89 +86,100 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
     setState(() => isLoading = true);
 
-    try {
-      final doctorId = (HiveStorage.getUserEmail() ?? '').trim();
-      if (doctorId.isEmpty) {
-        throw Exception('Doctor is not logged in.');
-      }
-
-      final subscriptionResponse = await _planRequestApiService.subscribeToPlan(
-        doctorId: doctorId,
-        planId: widget.selectedPlan.id,
-      );
-
-      final entitlementId = _entitlementId(subscriptionResponse);
-      if (entitlementId == null) {
-        throw Exception('Backend did not return an entitlement id.');
-      }
-
-      // Previous success path opened the receipt from the subscribe id
-      // without reading the entitlement again. "Doctor already has an
-      // active plan" called _goToDashboard() with no refresh.
-      final read = await Repository().readDoctorEntitlement();
-      final confirmed = read.snapshot;
-      final selectedName = widget.selectedPlan.planCode.toUpperCase();
-      final matches = confirmed != null &&
-          (confirmed.planId == widget.selectedPlan.id ||
-              confirmed.planName.toUpperCase() == selectedName);
-
-      // Receipt requires the refreshed plan to be the one just bought,
-      // still before expires_at, and with remaining_seconds > 0.
-      // An entitlement id alone is not enough.
-      if (confirmed == null || !matches || !confirmed.canUseProtectedFeatures) {
-        throw Exception(
-          'Payment was sent, but the plan is not active yet. Check Plans before trying again.',
-        );
-      }
-
-      if (!mounted) return;
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => SuccessScreen(
-            selectedPlan: widget.selectedPlan,
-            checkoutMethod: widget.paymentMethod,
-            paymentLabel: isCreditCard ? 'Credit Card' : 'Bank Transfer',
-            cardNumber: isCreditCard ? cardController.text : '',
-            transactionId: entitlementId,
-            doctorName: _doctorName(),
-            expiresOn: confirmed.expiresAt == null
-                ? ''
-                : '${confirmed.expiresAt!.day}/${confirmed.expiresAt!.month}/${confirmed.expiresAt!.year}',
-            remainingLabel: EntitlementHelper.formatSeconds(confirmed.remainingSeconds),
-            includedLabel: EntitlementHelper.formatSeconds(confirmed.allocatedSeconds),
-          ),
-        ),
-      );
-    } catch (e) {
-      if (e.toString().toLowerCase().contains('already has an active plan')) {
-        final read = await Repository().readDoctorEntitlement();
-        if (!mounted) return;
-        final name = read.snapshot?.planName;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              name == null || name.isEmpty
-                  ? 'You already have an active plan.'
-                  : 'You already have an active $name plan.',
-            ),
-          ),
-        );
-        _goToDashboard();
-        return;
-      }
-
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.toString().replaceFirst('Exception: ', '')),
-          duration: const Duration(seconds: 5),
-        ),
-      );
-    } finally {
+    if (await subscriptionBlocked(context) || !mounted) {
       if (mounted) setState(() => isLoading = false);
+      return;
     }
+
+    final doctorId = (HiveStorage.getUserEmail() ?? '').trim();
+    if (doctorId.isEmpty) {
+      _showMessage('Doctor is not logged in.');
+      if (mounted) setState(() => isLoading = false);
+      return;
+    }
+
+    final result = await _planRequestApiService.subscribeToPlan(
+      doctorId: doctorId,
+      planId: widget.selectedPlan.id,
+    );
+    if (!mounted) return;
+
+    if (!result.reachedServer) {
+      _showMessage(result.message);
+      setState(() => isLoading = false);
+      return;
+    }
+
+    if (result.statusCode == 400) {
+      await Repository().readDoctorEntitlement();
+      if (!mounted) return;
+      _showMessage(result.message);
+      setState(() => isLoading = false);
+      _goToDashboard();
+      return;
+    }
+
+    if (!result.isSuccess || result.data == null) {
+      _showMessage(result.message);
+      setState(() => isLoading = false);
+      return;
+    }
+
+    final entitlementId = _entitlementId(result.data!);
+    if (entitlementId == null) {
+      _showMessage('Backend did not return an entitlement id.');
+      setState(() => isLoading = false);
+      return;
+    }
+
+    // Previous success path opened the receipt from the subscribe id
+    // without reading the entitlement again. A 400 called
+    // _goToDashboard() with no refresh.
+    final read = await Repository().readDoctorEntitlement();
+    final confirmed = read.snapshot;
+    final selectedName = widget.selectedPlan.planCode.toUpperCase();
+    final matches = confirmed != null &&
+        (confirmed.planId == widget.selectedPlan.id ||
+            confirmed.planName.toUpperCase() == selectedName);
+
+    // Receipt requires the refreshed plan to be the one just bought,
+    // still before expires_at, and with remaining_seconds > 0.
+    // An entitlement id alone is not enough.
+    if (confirmed == null || !matches || !confirmed.canUseProtectedFeatures) {
+      _showMessage(
+        'Payment was sent, but the plan is not active yet. Check Plans before trying again.',
+      );
+      if (mounted) setState(() => isLoading = false);
+      return;
+    }
+
+    if (!mounted) return;
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => SuccessScreen(
+          selectedPlan: widget.selectedPlan,
+          checkoutMethod: widget.paymentMethod,
+          paymentLabel: isCreditCard ? 'Credit Card' : 'Bank Transfer',
+          cardNumber: isCreditCard ? cardController.text : '',
+          transactionId: entitlementId,
+          doctorName: _doctorName(),
+          expiresOn: confirmed.expiresAt == null
+              ? ''
+              : '${confirmed.expiresAt!.day}/${confirmed.expiresAt!.month}/${confirmed.expiresAt!.year}',
+          remainingLabel: EntitlementHelper.formatSeconds(confirmed.remainingSeconds),
+          includedLabel: EntitlementHelper.formatSeconds(confirmed.allocatedSeconds),
+        ),
+      ),
+    );
+    if (mounted) setState(() => isLoading = false);
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), duration: const Duration(seconds: 5)),
+    );
   }
 
   @override

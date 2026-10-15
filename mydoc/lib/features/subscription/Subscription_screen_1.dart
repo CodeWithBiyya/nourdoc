@@ -7,6 +7,7 @@ import '../../core/common/entitlement_helper.dart';
 import '../../core/storage/hive_storage.dart';
 import '../../app/routes/routs_name.dart';
 import 'Checkout.dart';
+import 'subscription_guard.dart';
 
 class SubscriptionScreen1 extends StatefulWidget {
   const SubscriptionScreen1({super.key});
@@ -28,6 +29,7 @@ class _SubscriptionScreen1State extends State<SubscriptionScreen1> {
   String? errorMessage;
   EntitlementRead? entitlementRead;
   String? activatingPlanId;
+  bool _planActionInFlight = false;
 
   @override
   void initState() {
@@ -112,6 +114,8 @@ class _SubscriptionScreen1State extends State<SubscriptionScreen1> {
 
   Future<void> _activateWithoutPayment(PlanModel plan) async {
     if (activatingPlanId != null) return;
+    if (await subscriptionBlocked(context)) return;
+    if (!mounted) return;
 
     final doctorId = (HiveStorage.getUserEmail() ?? '').trim().toLowerCase();
     if (doctorId.isEmpty) {
@@ -121,64 +125,49 @@ class _SubscriptionScreen1State extends State<SubscriptionScreen1> {
 
     setState(() => activatingPlanId = plan.id);
 
-    try {
-      await PlanRequestApiService().subscribeToPlan(
-        doctorId: doctorId,
-        planId: plan.id,
-      );
+    final result = await PlanRequestApiService().subscribeToPlan(
+      doctorId: doctorId,
+      planId: plan.id,
+    );
+    if (!mounted) return;
 
-      final read = await Repository().readDoctorEntitlement();
-      if (!mounted) return;
-
-      final confirmed = read.snapshot;
-      final matches = confirmed != null &&
-          (confirmed.planId == plan.id ||
-              confirmed.planName.toUpperCase() == plan.planCode.toUpperCase());
-
-      if (!matches || confirmed == null || !confirmed.canUseProtectedFeatures) {
-        setState(() {
-          entitlementRead = read;
-          activatingPlanId = null;
-        });
-        _showMessage('The trial could not be confirmed. Nothing else was changed.');
-        return;
-      }
-
-      Navigator.pushNamedAndRemoveUntil(
-        context,
-        RouteNames.dashboard,
-        (route) => false,
-      );
-    } catch (e) {
-      if (!mounted) return;
-      if (e.toString().toLowerCase().contains('already has an active plan')) {
+    if (!result.isSuccess || result.data == null) {
+      if (result.reachedServer) {
         final read = await Repository().readDoctorEntitlement();
         if (!mounted) return;
         setState(() {
           entitlementRead = read;
           activatingPlanId = null;
         });
-        final name = read.snapshot?.planName;
-        _showMessage(
-          name == null || name.isEmpty
-              ? 'You already have an active plan.'
-              : 'You already have an active $name plan.',
-        );
-        return;
+      } else {
+        setState(() => activatingPlanId = null);
       }
+      _showMessage(result.message);
+      return;
+    }
 
-      // A rejected trial is not a purchase. Refresh and stay on Packages.
-      // Do not open the dashboard or a receipt.
-      final read = await Repository().readDoctorEntitlement();
-      if (!mounted) return;
+    final read = await Repository().readDoctorEntitlement();
+    if (!mounted) return;
+
+    final confirmed = read.snapshot;
+    final matches = confirmed != null &&
+        (confirmed.planId == plan.id ||
+            confirmed.planName.toUpperCase() == plan.planCode.toUpperCase());
+
+    if (confirmed == null || !matches || !confirmed.canUseProtectedFeatures) {
       setState(() {
         entitlementRead = read;
         activatingPlanId = null;
       });
-      _showMessage(
-        'The trial was not started. ${e.toString().replaceFirst('Exception: ', '')}',
-      );
+      _showMessage('The trial could not be confirmed. Nothing else was changed.');
+      return;
     }
+
+    Navigator.pushNamedAndRemoveUntil(
+      context,
+      RouteNames.dashboard,
+      (route) => false,
+    );
   }
 
   void _showMessage(String message) {
@@ -187,24 +176,47 @@ class _SubscriptionScreen1State extends State<SubscriptionScreen1> {
     );
   }
 
-  void _onPlanAction(PlanModel plan) {
-    if (_purchaseBlocked(plan)) return;
+  Future<void> _onPlanAction(PlanModel plan) async {
+    if (_planActionInFlight) return;
+    _planActionInFlight = true;
+    try {
+      await _runPlanAction(plan);
+    } finally {
+      _planActionInFlight = false;
+    }
+  }
+
+  Future<void> _runPlanAction(PlanModel plan) async {
+    if (_purchaseBlocked(plan)) {
+      final current = _entitlement;
+      if (entitlementRead?.result == EntitlementFetchResult.network ||
+          entitlementRead?.result == EntitlementFetchResult.malformed) {
+        _showMessage('Your current plan could not be checked. A new plan was not started.');
+        return;
+      }
+      if (current != null && current.blocksAnotherPurchase) {
+        await subscriptionBlocked(context);
+      }
+      return;
+    }
+    if (await subscriptionBlocked(context) || !mounted) return;
 
     // Previous button always opened Checkout, including a free trial:
     // Navigator.push(context, MaterialPageRoute(
     //   builder: (context) => Checkout(selectedPlan: plan),
     // ));
     if (plan.effectivePrice == 0 && plan.planCode.toLowerCase() != 'enterprise') {
-      _activateWithoutPayment(plan);
+      await _activateWithoutPayment(plan);
       return;
     }
 
-    Navigator.push(
+    await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => Checkout(selectedPlan: plan),
       ),
-    ).then((_) => _loadPlans());
+    );
+    if (mounted) _loadPlans();
   }
 
   @override
@@ -243,6 +255,11 @@ class _SubscriptionScreen1State extends State<SubscriptionScreen1> {
         centerTitle: true,
 
         actions: [
+          IconButton(
+            tooltip: 'Current plan',
+            icon: Icon(Icons.assignment_outlined, color: primaryTeal, size: 26),
+            onPressed: () => Navigator.pushNamed(context, RouteNames.current_plan),
+          ),
           IconButton(
             icon: Icon(
               Icons.home_outlined,
@@ -707,7 +724,7 @@ class _SubscriptionScreen1State extends State<SubscriptionScreen1> {
                             ? 'Starting...'
                             : _buttonLabel(plan),
                         _purchaseBlocked(plan) ? Colors.grey : primaryTeal,
-                        () => _onPlanAction(plan),
+                        _purchaseBlocked(plan) ? null : () => _onPlanAction(plan),
                       ),
 
                       if (plan.isActive) ...[
@@ -717,20 +734,18 @@ class _SubscriptionScreen1State extends State<SubscriptionScreen1> {
 
                         _actionButton(
                           "Renew",
-                          primaryTeal,
-
-                          () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    Checkout(
-                                  selectedPlan:
-                                      plan,
-                                ),
-                              ),
-                            );
-                          },
+                          _purchaseBlocked(plan) ? Colors.grey : primaryTeal,
+                          _purchaseBlocked(plan)
+                              ? null
+                              : () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          Checkout(selectedPlan: plan),
+                                    ),
+                                  );
+                                },
                         ),
                       ],
                     ],
@@ -807,7 +822,7 @@ class _SubscriptionScreen1State extends State<SubscriptionScreen1> {
   Widget _actionButton(
     String label,
     Color color,
-    VoidCallback onTap,
+    VoidCallback? onTap,
   ) {
     return GestureDetector(
       onTap: onTap,
