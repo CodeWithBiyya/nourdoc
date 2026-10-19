@@ -45,10 +45,12 @@ Future<List<PlanModel>> getPlans() async {
     }
 
     final dynamic decoded = jsonDecode(response.body);
+    final dynamic payload = decoded is Map && decoded['data'] is List
+        ? decoded['data']
+        : decoded;
 
-    // Backend returns a LIST directly
-    if (decoded is List) {
-      final plans = decoded
+    if (payload is List) {
+      final plans = payload
           .whereType<Map<String, dynamic>>()
           .map(
             (plan) => PlanModel.fromJson(plan),

@@ -57,7 +57,8 @@ class SubscribeResult {
     if (statusCode >= 200 && statusCode < 300) {
       try {
         final decoded = jsonDecode(body);
-        if (decoded is Map) data = Map<String, dynamic>.from(decoded);
+        final payload = successPayload(decoded);
+        if (payload is Map) data = Map<String, dynamic>.from(payload);
       } catch (_) {}
     }
 
@@ -81,10 +82,28 @@ String messageFromBody(String body) {
   if (raw.isEmpty) return '';
 
   try {
-    return _messageFromDecoded(jsonDecode(raw)) ?? raw;
+    final decoded = jsonDecode(raw);
+    final message = _messageFromDecoded(decoded);
+    if (message != null && message.isNotEmpty) return message;
+    if (decoded is Map &&
+        (decoded.containsKey('data') ||
+            decoded.containsKey('message') ||
+            decoded.containsKey('detail'))) {
+      return '';
+    }
+    return raw;
   } catch (_) {
     return raw;
   }
+}
+
+/// Success bodies are `{ "data": <payload>, "message": ... }`.
+/// The payload is what the rest of the app already reads.
+dynamic successPayload(dynamic decoded) {
+  if (decoded is Map && decoded.containsKey('data') && decoded['data'] != null) {
+    return decoded['data'];
+  }
+  return decoded;
 }
 
 String? _messageFromDecoded(dynamic decoded) {

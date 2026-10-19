@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
 
+import '../common/http_result.dart';
 import 'app_exceptions.dart';
 import 'base_api_services.dart';
 
@@ -52,33 +53,65 @@ class NetworkApiService extends BaseApiService {
 
   // 🔹 Updated logic to prevent generic popups on empty data
   dynamic returnResponse(http.Response response) {
+    final decoded = _decode(response.body);
+
     switch (response.statusCode) {
       case 200:
       case 201:
-        return jsonDecode(response.body);
+        return successPayload(decoded);
 
       case 404:
-      // 🚩 KEY CHANGE: Instead of throwing an error, return a custom map
-      // This stops the "Communication Error" popup from appearing on Dashboard
+      // A missing record stays a 404 map so lists stay empty and
+      // entitlement stays "no plan". The server sentence is in detail.
+        final missing = _serverText(decoded) ?? 'No data available';
         return {
           "custom_status": 404,
-          "message": "No data available",
+          "message": missing,
+          "detail": missing,
+          "code": decoded is Map ? decoded['code'] : null,
           "data": []
         };
 
       case 409:
-        return jsonDecode(response.body);
+        if (decoded is Map) {
+          final map = Map<String, dynamic>.from(decoded);
+          if (map['message'] == null && map['detail'] is String) {
+            map['message'] = map['detail'];
+          }
+          return map;
+        }
+        return decoded;
 
       case 401:
-      // Unauthorized logic remains
-        throw UnauthorisedException('status code 401');
+        throw UnauthorisedException(_serverText(decoded) ?? 'status code 401');
 
       default:
-      // Generic error for everything else
         throw FetchDataException(
-          'Error occurred with status code ${response.statusCode}',
+          _serverText(decoded) ??
+              'Error occurred with status code ${response.statusCode}',
         );
     }
+  }
+
+  dynamic _decode(String body) {
+    final raw = body.trim();
+    if (raw.isEmpty) return null;
+    try {
+      return jsonDecode(raw);
+    } catch (_) {
+      return raw;
+    }
+  }
+
+  String? _serverText(dynamic decoded) {
+    if (decoded is Map) {
+      final detail = decoded['detail'];
+      if (detail is String && detail.trim().isNotEmpty) return detail.trim();
+      final message = decoded['message'];
+      if (message is String && message.trim().isNotEmpty) return message.trim();
+    }
+    if (decoded is String && decoded.trim().isNotEmpty) return decoded.trim();
+    return null;
   }
 
   @override

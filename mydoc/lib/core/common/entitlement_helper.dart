@@ -190,7 +190,10 @@ class EntitlementHelper {
   static Map<String, dynamic>? unwrap(dynamic raw) {
     if (raw is! Map) return null;
 
-    final dynamic data = raw.containsKey('response') ? raw['response'] : raw;
+    dynamic data = raw.containsKey('response') ? raw['response'] : raw;
+    if (data is Map && data['id'] == null && data['data'] is Map) {
+      data = data['data'];
+    }
     if (data is! Map) return null;
 
     return Map<String, dynamic>.from(data);

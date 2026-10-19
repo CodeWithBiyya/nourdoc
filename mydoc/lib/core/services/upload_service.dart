@@ -76,11 +76,14 @@ class SyncService {
       if (response.body.trim().isEmpty) return null;
 
       final decoded = jsonDecode(response.body);
-      final Map<String, dynamic> data = decoded is Map
+      Map<String, dynamic> data = decoded is Map
           ? (decoded["response"] is Map
               ? Map<String, dynamic>.from(decoded["response"])
               : Map<String, dynamic>.from(decoded))
           : {};
+      if (data["data"] is Map) {
+        data = Map<String, dynamic>.from(data["data"] as Map);
+      }
 
       String? pick(List<String> keys) {
         for (final k in keys) {

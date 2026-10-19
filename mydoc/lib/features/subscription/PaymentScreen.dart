@@ -110,7 +110,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
       return;
     }
 
-    if (result.statusCode == 400) {
+    if (result.statusCode == 400 || result.statusCode == 409) {
       await Repository().readDoctorEntitlement();
       if (!mounted) return;
       _showMessage(result.message);

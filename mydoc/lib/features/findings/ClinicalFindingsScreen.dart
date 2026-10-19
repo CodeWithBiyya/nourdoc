@@ -158,11 +158,15 @@ class _ClinicalFindingsScreenState extends State<ClinicalFindingsScreen> {
 
       debugPrint("Decoded API data: $decoded");
 
-      if (decoded is Map<String, dynamic> &&
-          decoded['ok'] == true &&
-          decoded['result'] != null) {
+      final riskBody = decoded is Map && decoded['data'] is Map && decoded['ok'] != true
+          ? decoded['data'] as Map
+          : decoded;
 
-        final result = decoded['result'];
+      if (riskBody is Map &&
+          riskBody['ok'] == true &&
+          riskBody['result'] != null) {
+
+        final result = riskBody['result'];
 
         debugPrint("Risk result: $result");
 
@@ -181,8 +185,8 @@ class _ClinicalFindingsScreenState extends State<ClinicalFindingsScreen> {
         debugPrint("Final Score 10: ${_riskData?['final_score_10']}");
       } else {
         debugPrint("❌ Risk API returned ok=false or result is null");
-        debugPrint("ok: ${decoded['ok']}");
-        debugPrint("result: ${decoded['result']}");
+        debugPrint("ok: ${riskBody is Map ? riskBody['ok'] : null}");
+        debugPrint("result: ${riskBody is Map ? riskBody['result'] : null}");
       }
     } else {
       debugPrint("❌ Risk API HTTP Error: ${response.statusCode}");
@@ -208,7 +212,10 @@ class _ClinicalFindingsScreenState extends State<ClinicalFindingsScreen> {
         // Uri.parse('https://4ugllkifsb.execute-api.us-east-1.amazonaws.com/audio/$_id') //PRODUCTION
       );
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+        final decodedAudio = jsonDecode(response.body);
+        final data = decodedAudio is Map && decodedAudio['data'] is Map
+            ? decodedAudio['data'] as Map
+            : decodedAudio;
         String audioUrl = data['audio_url'];
         await _audioPlayer?.setUrl(audioUrl);
         _isAudioInitialized = true;

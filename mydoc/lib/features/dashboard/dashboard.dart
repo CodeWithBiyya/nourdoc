@@ -345,7 +345,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   final response = await http.get(Uri.parse(finalUrl));
 
                   if (response.statusCode == 200) {
-                    final data = jsonDecode(response.body);
+                    final decoded = jsonDecode(response.body);
+                    final data = decoded is Map && decoded['data'] is Map
+                        ? Map<String, dynamic>.from(decoded['data'] as Map)
+                        : decoded;
                     print("Profile Data Received: $data");
 
                     // Data save karein
