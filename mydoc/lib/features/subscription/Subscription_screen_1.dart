@@ -266,7 +266,13 @@ class _SubscriptionScreen1State extends State<SubscriptionScreen1> {
               color: primaryTeal,
               size: 30,
             ),
-            onPressed: () {},
+            onPressed: () {
+                 Navigator.pushNamedAndRemoveUntil(
+      context,
+      RouteNames.dashboard,
+      (route) => false,
+    );
+            },
           ),
           const SizedBox(width: 8),
         ],

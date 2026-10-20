@@ -24,7 +24,7 @@ android {
 
     signingConfigs {
         create("release") {
-            storeFile = file("C:\\Users\\hp\\StudioProjects\\AYD Orderpad.jks")
+            storeFile = file("C:\\Users\\LENOVO\\StudioProjects\\AYD Orderpad.jks")
             storePassword = "ayd@123"
             keyAlias = "key0"
             keyPassword = "ayd@123"
