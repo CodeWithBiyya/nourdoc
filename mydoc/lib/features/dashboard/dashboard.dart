@@ -101,7 +101,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           child: Text(
             "Clinical Insights Dashboard",
             style: TextStyle(
-              fontSize: 28,
+              fontSize: 26,
               fontWeight: FontWeight.w900,
               color: Colorprimary,
             ),
@@ -115,11 +115,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
               final label = snapshot == null || !snapshot.hasEntitlement
                   ? 'No current plan'
                   : '${snapshot.statusLabel} · ${EntitlementHelper.formatSeconds(snapshot.remainingSeconds)} left';
-              return GestureDetector(
-                onTap: () => Navigator.pushNamed(context, RouteNames.current_plan),
-                child: Text(
-                  label,
-                  style: const TextStyle(fontSize: 13, color: Colors.black54),
+              return Align(
+                alignment: Alignment.centerLeft,
+                child: Material(
+                  color: const Color(0xFFE7EEF4),
+                  borderRadius: BorderRadius.circular(20),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(20),
+                    onTap: () => Navigator.pushNamed(context, RouteNames.current_plan),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 6, 6, 6),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            label,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: Colorprimary,
+                            ),
+                          ),
+                          const Icon(Icons.chevron_right, size: 18, color: Colorprimary),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
               );
             },
@@ -308,12 +329,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             PopupMenuButton<String>(
               color: Colors.white,
               surfaceTintColor: Colors.white,
-              icon: Image.asset(
-                "assets/icons/Doc.png",
-                width: 32,
-                height: 32,
-                fit: BoxFit.contain,
-              ),
+              icon: const DoctorAvatarIcon(size: 30),
               offset: const Offset(0, 50),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -390,6 +406,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     RouteNames.splash, (route) => false, // This removes all previous screens
                   );
                 }
+              else if (value == 'current_plan') {
+                Navigator.pushNamed(context, RouteNames.current_plan);
+              }
               else if (value == 'subscription') {
                 Navigator.push(
                   context,
@@ -411,6 +430,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 const PopupMenuItem(
                   value: 'about',
                   child: Text("About NourDoc"),
+                ),
+                const PopupMenuItem(
+                  value: 'current_plan',
+                  child: Text("Current plan"),
                 ),
                 const PopupMenuItem(
                   value: 'subscription',

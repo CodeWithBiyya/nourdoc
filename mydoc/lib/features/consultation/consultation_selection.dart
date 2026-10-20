@@ -110,8 +110,8 @@ class _ConsultationSelectionScreenState
                     OutlinedButton(
                       style: OutlinedButton.styleFrom(
                         side: const BorderSide(color: Colorprimary),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                        minimumSize: const Size(double.infinity, 50),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                        minimumSize: const Size(double.infinity, 44),
                       ),
                       onPressed: () => Navigator.pushNamed(context, RouteNames.queuelist).then((_) {
                         setState(() {});
@@ -172,7 +172,8 @@ class _ConsultationSelectionScreenState
                         Expanded(
                           child: RefreshIndicator(
                             onRefresh: () async => await consultationViewModel.getBookedPatients(),
-                            color: Colors.black,
+                            color: Colorprimary,
+                            backgroundColor: Colors.white,
                             child: ListView.builder(
                               physics: const AlwaysScrollableScrollPhysics(),
                               itemCount: patients.length,
@@ -298,8 +299,8 @@ class _ConsultationSelectionScreenState
       style: ElevatedButton.styleFrom(
         backgroundColor: Colorprimary,
         elevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-        minimumSize: const Size(double.infinity, 50),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+        minimumSize: const Size(double.infinity, 44),
       ),
       onPressed: () {
         int queueCount = HiveStorage.getOutBoxCount();
@@ -319,12 +320,8 @@ class _ConsultationSelectionScreenState
 
         // 3. Behavior A: Both are under 5. Allow new consultation.
         else {
-          utils.checkEntitlementAndLimit(context).then((allowed) {
-            if (allowed) {
-              Navigator.pushNamed(context, RouteNames.NewEncounterInformationScreen)
-                  .then((_) => consultationViewModel.getBookedPatients());
-            }
-          });
+          Navigator.pushNamed(context, RouteNames.NewEncounterInformationScreen)
+              .then((_) => consultationViewModel.getBookedPatients());
         }
       },
 
@@ -336,8 +333,8 @@ class _ConsultationSelectionScreenState
             "New Consultation",
             style: TextStyle(
               color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
             ),
           ),
           SizedBox(width: 10),
@@ -351,6 +348,8 @@ class _ConsultationSelectionScreenState
     return LayoutBuilder(
       builder: (context, constraints) {
         return RefreshIndicator(
+          color: Colorprimary,
+          backgroundColor: Colors.white,
           onRefresh: () async =>
               await consultationViewModel.getBookedPatients(),
           child: SingleChildScrollView(

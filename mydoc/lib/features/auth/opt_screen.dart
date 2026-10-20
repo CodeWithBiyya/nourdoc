@@ -1627,14 +1627,31 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
 
   Future<void> callProfile(String token) async {
     dynamic responses = await OptViewModel().getDocProfile(token);
-    if (responses != null) {
-      if (responses["ph_number"] != null) await HiveStorage.setPhone(responses["ph_number"].toString());
-      if (responses["specialisation"] != null) await HiveStorage.setspeciallisation(responses["specialisation"].toString());
-      if (responses["city"] != null) await HiveStorage.setCity(responses["city"].toString());
-      if (responses["name"] != null) await HiveStorage.setName(responses["name"]);
-      if (responses["experience"] != null) await HiveStorage.setExperience(responses["experience"]);
-      if (responses["license_no"] != null) await HiveStorage.setlicenseno(responses["license_no"]);
-      await HiveStorage.setProfileSatatus("c");
+    if (responses is! Map) return;
+
+    String? field(List<String> keys) {
+      for (final key in keys) {
+        final value = responses[key];
+        if (value != null && value.toString().trim().isNotEmpty) {
+          return value.toString();
+        }
+      }
+      return null;
     }
+
+    final phone = field(['phone_number', 'ph_number']);
+    final speciality = field(['doctor_specialisation', 'specialisation']);
+    final city = field(['city']);
+    final name = field(['doctor_name', 'name']);
+    final experience = field(['experience']);
+    final license = field(['license_no']);
+
+    if (phone != null) await HiveStorage.setPhone(phone);
+    if (speciality != null) await HiveStorage.setspeciallisation(speciality);
+    if (city != null) await HiveStorage.setCity(city);
+    if (name != null) await HiveStorage.setName(name);
+    if (experience != null) await HiveStorage.setExperience(experience.replaceAll(" years", "").trim());
+    if (license != null) await HiveStorage.setlicenseno(license);
+    await HiveStorage.setProfileSatatus("c");
   }
 }

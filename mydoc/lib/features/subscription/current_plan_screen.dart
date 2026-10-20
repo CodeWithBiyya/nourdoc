@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../app/routes/routs_name.dart';
+import '../../app/theme/colors.dart';
 import '../../core/common/appDialog.dart';
 import '../../core/common/entitlement_helper.dart';
 import '../../core/common/http_result.dart';
@@ -16,7 +17,7 @@ class CurrentPlanScreen extends StatefulWidget {
 }
 
 class _CurrentPlanScreenState extends State<CurrentPlanScreen> {
-  static const Color primaryTeal = Color(0xFF3FA3BA);
+  static const Color primaryTeal = Colorprimary;
 
   EntitlementRead? _read;
   bool _loading = true;
@@ -119,34 +120,39 @@ class _CurrentPlanScreenState extends State<CurrentPlanScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF7F9FA),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.white,
         centerTitle: true,
-        leading: Padding(
-          padding: const EdgeInsets.all(8),
-          child: CircleAvatar(
-            backgroundColor: primaryTeal,
-            child: IconButton(
-              icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 16),
-              onPressed: () => Navigator.pop(context),
-            ),
-          ),
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: ColoredBox(color: Color(0xFFE6EEF0), child: SizedBox(height: 1)),
+        ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new, color: primaryTeal, size: 22),
+          onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
           'Current plan',
-          style: TextStyle(color: Colors.black, fontSize: 28, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: Color(0xFF1C2B33),
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator(color: primaryTeal))
           : RefreshIndicator(
               color: primaryTeal,
+              backgroundColor: Colors.white,
               onRefresh: _load,
               child: ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
                 children: [
                   _body(),
                 ],
@@ -160,72 +166,292 @@ class _CurrentPlanScreenState extends State<CurrentPlanScreen> {
     if (read == null ||
         read.result == EntitlementFetchResult.network ||
         read.result == EntitlementFetchResult.malformed) {
-      return _card(
+      return _notice(
         title: 'Plan status unavailable',
-        lines: const [
-          'Your plan could not be checked. It is not shown as active.',
-        ],
+        message: 'Your plan could not be checked. It is not shown as active.',
         action: TextButton(onPressed: _load, child: const Text('Retry')),
       );
     }
 
     final current = read.snapshot;
     if (current == null || !current.hasEntitlement) {
-      return _card(
+      return _notice(
         title: 'No active subscription',
-        lines: const [
-          'There is no current plan on this account.',
-        ],
-        action: ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: primaryTeal,
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        message: 'There is no current plan on this account.',
+        action: SizedBox(
+          height: 40,
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: primaryTeal,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () => Navigator.pushNamed(context, RouteNames.subscription_screen),
+            child: const Text('View plans'),
           ),
-          onPressed: () => Navigator.pushNamed(context, RouteNames.subscription_screen),
-          child: const Text('View plans'),
         ),
       );
     }
 
-    return _card(
-      title: current.planName.isEmpty ? 'Current plan' : current.planName,
-      lines: [
-        current.statusLabel,
-        'Type: ${current.isTrial ? 'Trial' : 'Paid'}',
-        'Starts: ${_date(current.startsAt)}',
-        'Expires: ${_date(current.expiresAt)}',
-        'Time left: ${EntitlementHelper.formatSeconds(current.remainingSeconds)} '
-            'of ${EntitlementHelper.formatSeconds(current.allocatedSeconds)}',
-        'Used: ${EntitlementHelper.formatSeconds(current.consumedSeconds)}',
-        if (current.reservedSeconds > 0)
-          'Reserved: ${EntitlementHelper.formatSeconds(current.reservedSeconds)}',
-      ],
-      action: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          OutlinedButton(
-            onPressed: () => Navigator.pushNamed(context, RouteNames.subscription_screen),
-            child: const Text('View plans'),
+    final remaining = EntitlementHelper.formatSeconds(current.remainingSeconds);
+    final allocated = EntitlementHelper.formatSeconds(current.allocatedSeconds);
+    final used = EntitlementHelper.formatSeconds(current.consumedSeconds);
+    final active = current.canUseProtectedFeatures;
+    final progress = current.allocatedSeconds <= 0
+        ? 0.0
+        : (current.consumedSeconds / current.allocatedSeconds).clamp(0.0, 1.0);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 6),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFE1E8EA)),
           ),
-          const SizedBox(height: 10),
-          ElevatedButton(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: Text(
+                      _planTitle(current.planName),
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF1C2B33),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  _badge(active ? 'Active' : current.statusLabel, filled: active),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                remaining,
+                style: const TextStyle(
+                  fontSize: 30,
+                  fontWeight: FontWeight.w700,
+                  color: Colorprimary,
+                  height: 1,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'remaining of $allocated',
+                style: const TextStyle(fontSize: 13, color: Color(0xFF5C6B72)),
+              ),
+              const SizedBox(height: 14),
+              const Divider(height: 1, color: Color(0xFFE1E8EA)),
+              const SizedBox(height: 12),
+              const Text(
+                'USAGE',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.6,
+                  color: Colorprimary,
+                ),
+              ),
+              const SizedBox(height: 10),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(3),
+                child: LinearProgressIndicator(
+                  value: progress,
+                  minHeight: 8,
+                  backgroundColor: const Color(0xFFE3EBED),
+                  color: primaryTeal,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                '${(progress * 100).round()}% used',
+                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF5C6B72)),
+              ),
+              const SizedBox(height: 4),
+              _metric('Remaining', remaining),
+              _metric('Used', used),
+              _metric('Total', allocated),
+              if (current.reservedSeconds > 0)
+                _metric('Reserved', EntitlementHelper.formatSeconds(current.reservedSeconds)),
+              const SizedBox(height: 8),
+              const Divider(height: 1, color: Color(0xFFE1E8EA)),
+              const SizedBox(height: 12),
+              const Text(
+                'SUBSCRIPTION DETAILS',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.6,
+                  color: Colorprimary,
+                ),
+              ),
+              _detail('Plan type', current.isTrial ? 'Trial' : 'Paid'),
+              _detail('Started', _date(current.startsAt)),
+              _detail('Expires', _date(current.expiresAt)),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          height: 46,
+          child: ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF255563),
+              backgroundColor: primaryTeal,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () => Navigator.pushNamed(context, RouteNames.subscription_screen),
+            child: const Text(
+              'View plans',
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        SizedBox(
+          height: 46,
+          child: OutlinedButton(
+            style: OutlinedButton.styleFrom(
+              foregroundColor: primaryTeal,
+              side: const BorderSide(color: Colorprimary, width: 1.4),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
             onPressed: _cancelling ? null : _confirmCancel,
             child: _cancelling
                 ? const SizedBox(
                     width: 18,
                     height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colorprimary),
                   )
-                : const Text('Cancel subscription'),
+                : const Text(
+                    'Cancel subscription',
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                  ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _planTitle(String name) {
+    final text = name.trim();
+    if (text.isEmpty) return 'Current plan';
+    return text[0].toUpperCase() + text.substring(1);
+  }
+
+  Widget _badge(String label, {required bool filled}) {
+    return Container(
+      margin: const EdgeInsets.only(top: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: filled ? const Color(0xFFE7EEF4) : const Color(0xFFF3F5F6),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(
+              color: filled ? Colorprimary : const Color(0xFF8A97A0),
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: filled ? Colorprimary : const Color(0xFF5C6B72),
+            ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _metric(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(label, style: const TextStyle(fontSize: 14, color: Color(0xFF5C6B72))),
+          ),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF1C2B33),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _detail(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Text(label, style: const TextStyle(fontSize: 14, color: Color(0xFF5C6B72))),
+          ),
+          const SizedBox(width: 12),
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF1C2B33),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _notice({
+    required String title,
+    required String message,
+    required Widget action,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF1C2B33),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          message,
+          style: const TextStyle(fontSize: 14, height: 1.4, color: Color(0xFF5C6B72)),
+        ),
+        const SizedBox(height: 16),
+        action,
+      ],
     );
   }
 
@@ -237,31 +463,4 @@ class _CurrentPlanScreenState extends State<CurrentPlanScreen> {
     return '${value.day} ${months[value.month - 1]} ${value.year}, $hour:$minute';
   }
 
-  Widget _card({
-    required String title,
-    required List<String> lines,
-    required Widget action,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF7FBFC),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFD7E7EB)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 12),
-          for (final line in lines) ...[
-            Text(line, style: const TextStyle(fontSize: 15, height: 1.4, color: Colors.black87)),
-            const SizedBox(height: 6),
-          ],
-          const SizedBox(height: 12),
-          action,
-        ],
-      ),
-    );
-  }
 }

@@ -303,17 +303,20 @@ factory PlanModel.fromJson(Map<String, dynamic> json) {
   // ---------------------------------------------------------
 
   String get displayTitle {
-   final cleanTitle = title.trim();
+    final cleanTitle = title.trim();
+    if (cleanTitle.isEmpty) return cleanTitle;
 
-  // If API already returns "Trial Plan", "Starter Plan", etc.
-  // don't add another "Plan".
-  if (cleanTitle.toLowerCase().endsWith(' plan')) {
-    return cleanTitle;
-  }
+    final titled = cleanTitle[0].toUpperCase() + cleanTitle.substring(1);
 
-  // If API returns only "Trial", "Starter", etc.
-  // add "Plan" once.
-  return '$cleanTitle Plan';
+    // If API already returns "Trial Plan", "Starter Plan", etc.
+    // don't add another "Plan".
+    if (titled.toLowerCase().endsWith(' plan')) {
+      return titled;
+    }
+
+    // If API returns only "Trial", "Starter", etc.
+    // add "Plan" once.
+    return '$titled Plan';
   }
 
   // ---------------------------------------------------------

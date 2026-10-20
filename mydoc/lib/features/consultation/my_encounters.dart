@@ -130,12 +130,7 @@ class _MyEncountersScreen extends State<MyEncountersScreen>
             PopupMenuButton<String>(
               color: Colors.white,
               surfaceTintColor: Colors.white,
-              icon: Image.asset(
-                "assets/icons/Doc.png",
-                width: 32,
-                height: 32,
-                fit: BoxFit.contain,
-              ),
+              icon: const DoctorAvatarIcon(size: 30),
               offset: const Offset(0, 50),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               onSelected: (value) {
@@ -157,6 +152,8 @@ class _MyEncountersScreen extends State<MyEncountersScreen>
                 } else if (value == 'logout') {
                   HiveStorage.clearHives();
                   Navigator.pushNamedAndRemoveUntil(context, RouteNames.splash, (route) => false);
+                } else if (value == 'current_plan') {
+                  Navigator.pushNamed(context, RouteNames.current_plan);
                 } else if (value == 'subscription') {
                   Navigator.push(
                     context,
@@ -173,6 +170,7 @@ class _MyEncountersScreen extends State<MyEncountersScreen>
               itemBuilder: (context) => [
                 const PopupMenuItem(value: 'profile', child: Text("My Profile")),           
                 const PopupMenuItem(value: 'about', child: Text("About NourDoc")),
+                const PopupMenuItem(value: 'current_plan', child: Text("Current plan")),
                 const PopupMenuItem(value: 'subscription', child: Text("Upgrade/Downgrade")),
                 const PopupMenuItem(value: 'legal', child: Text("Medico-Legal")),
                 const PopupMenuItem(value: 'privacy', child: Text("Privacy Policy")),
@@ -183,6 +181,8 @@ class _MyEncountersScreen extends State<MyEncountersScreen>
           ],
         ),
         body: RefreshIndicator(
+          color: Colorprimary,
+          backgroundColor: Colors.white,
           onRefresh: () async => _refreshScreen(),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8),

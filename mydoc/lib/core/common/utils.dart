@@ -105,15 +105,18 @@ class utils {
   static Future<EntitlementSnapshot?> requireProtectedAccess(
     BuildContext context, {
     int? upcomingSeconds,
+    bool showProgress = true,
   }) async {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(child: CupertinoActivityIndicator(radius: 20)),
-    );
+    if (showProgress) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CupertinoActivityIndicator(radius: 20)),
+      );
+    }
 
     final read = await Repository().readDoctorEntitlement();
-    if (context.mounted) Navigator.pop(context);
+    if (showProgress && context.mounted) Navigator.pop(context);
     if (!context.mounted) return null;
 
     if (read.result == EntitlementFetchResult.network) {

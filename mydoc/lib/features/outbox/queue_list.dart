@@ -207,7 +207,8 @@ class _OutboxListScreenState extends State<OutboxListScreen> {
 
               return RefreshIndicator(
                 onRefresh: () async => viewModel.fetchOutbox(),
-                color: Colors.black,
+                color: Colorprimary,
+                backgroundColor: Colors.white,
                 child: ListView.builder(
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                   itemCount: viewModel.outboxItems.length,

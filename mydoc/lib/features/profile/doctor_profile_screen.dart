@@ -73,20 +73,30 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
   }
 
   void _parseStoredPhone() {
-    if (_completePhoneNumber.isNotEmpty && _completePhoneNumber.startsWith("+")) {
-      bool found = false;
+    final stored = _completePhoneNumber.trim();
+    if (stored.isEmpty || stored == "null" || stored == "N/A") {
+      _completePhoneNumber = "";
+      return;
+    }
+
+    if (stored.startsWith("+")) {
       for (var country in _filteredLibraryCountries) {
-        String prefix = "+${country.dialCode}";
-        if (_completePhoneNumber.startsWith(prefix)) {
+        final prefix = "+${country.dialCode}";
+        if (stored.startsWith(prefix)) {
           _currentIsoCode = country.code;
-          String national = _completePhoneNumber.replaceFirst(prefix, "").trim();
-          contactController.text = national;
+          contactController.text = stored.replaceFirst(prefix, "").trim();
           _phoneWidgetRefreshKey = UniqueKey();
-          found = true;
-          break;
+          return;
         }
       }
     }
+
+    final digits = StringBuffer();
+    for (final code in stored.codeUnits) {
+      if (code >= 48 && code <= 57) digits.writeCharCode(code);
+    }
+    contactController.text = digits.toString();
+    _phoneWidgetRefreshKey = UniqueKey();
   }
 
   Future<void> loadCountryCityData() async {
@@ -105,15 +115,9 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
         _currentIsoCode = _filteredLibraryCountries.first.code;
       }
 
-      String savedLocation = HiveStorage.getcity().toString();
-      if (savedLocation != "null" && savedLocation.contains(",")) {
-        var parts = savedLocation.split(",");
-        selectedCity = parts[0].trim();
-        selectedCountry = parts[1].trim();
-        try {
-          var match = _filteredLibraryCountries.firstWhere((c) => c.name.toLowerCase().trim() == selectedCountry!.toLowerCase().trim());
-          _currentIsoCode = match.code;
-        } catch (_) {}
+      final savedLocation = HiveStorage.getcity()?.trim() ?? "";
+      if (savedLocation.isNotEmpty && savedLocation != "null" && savedLocation != "N/A") {
+        _applySavedLocation(savedLocation);
       }
     } catch (e) {
       debugPrint("Error loading countries: $e");
@@ -136,15 +140,55 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
     }
   }
 
+  void _applySavedLocation(String savedLocation) {
+    if (savedLocation.contains(",")) {
+      final parts = savedLocation.split(",");
+      selectedCity = parts[0].trim();
+      selectedCountry = parts.length > 1 ? parts[1].trim() : null;
+      _applyCountryCode(selectedCountry);
+      return;
+    }
+
+    final needle = savedLocation.toLowerCase();
+    for (final entry in countryCityMap.entries) {
+      for (final city in entry.value) {
+        if (city.toLowerCase().trim() == needle) {
+          selectedCountry = entry.key;
+          selectedCity = city;
+          _applyCountryCode(selectedCountry);
+          return;
+        }
+      }
+    }
+  }
+
+  void _applyCountryCode(String? countryName) {
+    if (countryName == null || countryName.isEmpty) return;
+    for (final country in _filteredLibraryCountries) {
+      if (country.name.toLowerCase().trim() == countryName.toLowerCase().trim()) {
+        _currentIsoCode = country.code;
+        return;
+      }
+    }
+  }
+
   Future<void> loadSpecialitiesData() async {
     try {
       final String jsonString = await rootBundle.loadString('assets/files/specialities.json');
       final Map<String, dynamic> data = json.decode(jsonString);
       specialities = List<String>.from(data['specialties'])..sort();
-      if (specialities.contains(HiveStorage.getspeciallisation())) {
-        selectedSpeciality = HiveStorage.getspeciallisation();
-        specialityController.text = selectedSpeciality ?? "";
+      final stored = HiveStorage.getspeciallisation()?.trim() ?? "";
+      if (stored.isEmpty || stored == "null" || stored == "N/A") return;
+
+      final match = specialities.where((item) => item.toLowerCase() == stored.toLowerCase());
+      if (match.isNotEmpty) {
+        selectedSpeciality = match.first;
+      } else {
+        specialities.add(stored);
+        specialities.sort();
+        selectedSpeciality = stored;
       }
+      specialityController.text = selectedSpeciality ?? "";
     } catch (e) {
       debugPrint("Error loading specialities: $e");
     }

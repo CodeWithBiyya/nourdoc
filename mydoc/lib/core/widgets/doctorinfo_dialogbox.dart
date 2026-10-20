@@ -1,8 +1,11 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:medicalai/app/theme/colors.dart';
 import 'package:medicalai/core/storage/hive_storage.dart';
 
-class DoctorInfoDialog extends StatelessWidget {
+class DoctorInfoDialog extends StatefulWidget {
   final String imagePath;
   final VoidCallback onEdit;
   final VoidCallback onLogout;
@@ -14,20 +17,40 @@ class DoctorInfoDialog extends StatelessWidget {
     required this.onLogout,
   });
 
+  @override
+  State<DoctorInfoDialog> createState() => _DoctorInfoDialogState();
+}
+
+class _DoctorInfoDialogState extends State<DoctorInfoDialog> {
+  String _city = "N/A";
+  String _country = "N/A";
+
+  @override
+  void initState() {
+    super.initState();
+    final location = _getDisplayValue(HiveStorage.getcity());
+    if (location.contains(",")) {
+      final parts = location.split(",");
+      _city = parts[0].trim();
+      _country = parts.length > 1 ? parts[1].trim() : "N/A";
+    } else {
+      _city = location;
+      _lookupCountry(location);
+    }
+  }
+
+  Future<void> _lookupCountry(String city) async {
+    if (city == "N/A") return;
+    final found = await _countryForCity(city);
+    if (!mounted || found == null) return;
+    setState(() {
+      _city = found.$1;
+      _country = found.$2;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    // Logic to handle City/Country split if stored together
-    String location = _getDisplayValue(HiveStorage.getcity());
-    String city = "N/A";
-    String country = "N/A";
-    if (location.contains(",")) {
-      var parts = location.split(",");
-      city = parts[0].trim();
-      country = parts[1].trim();
-    } else {
-      city = location;
-    }
 
     return Dialog(
       backgroundColor: Colors.white,
@@ -40,12 +63,7 @@ class DoctorInfoDialog extends StatelessWidget {
             mainAxisSize: MainAxisSize.min, // 👈 2. Keeps dialog compact
             children: [
               // 1. Doctor Image
-              Image.asset(
-                'assets/icons/Doc.png',
-                height: 90, // Adjust the height as needed
-                width: 90,  // Adjust the width as needed
-                fit: BoxFit.contain,
-              ),
+              const DoctorAvatarIcon(size: 72),
               const SizedBox(height: 12),
 
               // 2. Title
@@ -66,8 +84,8 @@ class DoctorInfoDialog extends StatelessWidget {
               _infoRow("Contact", _getDisplayValue(HiveStorage.getPhone())),
               _infoRow("Speciality", _getDisplayValue(HiveStorage.getspeciallisation())),
               _infoRow("Experience", "${_getDisplayValue(HiveStorage.getexperience())} years"),
-              _infoRow("City", city),
-              _infoRow("Country", country),
+              _infoRow("City", _city),
+              _infoRow("Country", _country),
               _infoRow("License Number", _getDisplayValue(HiveStorage.getlicenseno())),
 
               const SizedBox(height: 15),
@@ -77,7 +95,7 @@ class DoctorInfoDialog extends StatelessWidget {
                 children: [
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: onEdit,
+                      onPressed: widget.onEdit,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colorprimary,
                         foregroundColor: Colors.white,
@@ -91,7 +109,7 @@ class DoctorInfoDialog extends StatelessWidget {
                   const SizedBox(width: 10),
                   Expanded(
                     child: OutlinedButton(
-                      onPressed: onLogout,
+                      onPressed: widget.onLogout,
                       style: OutlinedButton.styleFrom(
                         side: const BorderSide(color: Colors.black, width: 1.2),
                         foregroundColor: Colors.black,
@@ -137,6 +155,98 @@ class DoctorInfoDialog extends StatelessWidget {
     }
     return value;
   }
+}
+
+Map<String, List<String>>? _citiesByCountry;
+
+Future<(String, String)?> _countryForCity(String city) async {
+  _citiesByCountry ??= await _loadCitiesByCountry();
+  final needle = city.toLowerCase().trim();
+  for (final entry in _citiesByCountry!.entries) {
+    for (final name in entry.value) {
+      if (name.toLowerCase().trim() == needle) {
+        return (name, entry.key);
+      }
+    }
+  }
+  return null;
+}
+
+Future<Map<String, List<String>>> _loadCitiesByCountry() async {
+  final raw = await rootBundle.loadString('assets/files/countries.json');
+  final data = json.decode(raw) as Map<String, dynamic>;
+  return data.map((key, value) => MapEntry(key, List<String>.from(value as List)));
+}
+
+class DoctorAvatarIcon extends StatelessWidget {
+  final double size;
+
+  const DoctorAvatarIcon({super.key, this.size = 32});
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      size: Size.square(size),
+      painter: const _DoctorAvatarPainter(),
+    );
+  }
+}
+
+class _DoctorAvatarPainter extends CustomPainter {
+  const _DoctorAvatarPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final double s = size.width / 40;
+    final Paint primary = Paint()
+      ..color = Colorprimary
+      ..style = PaintingStyle.fill;
+    final Paint white = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.fill;
+    final Paint line = Paint()
+      ..color = Colorprimary
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.7 * s
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+
+    final Path shoulders = Path()
+      ..moveTo(5 * s, 39 * s)
+      ..quadraticBezierTo(20 * s, 23 * s, 35 * s, 39 * s)
+      ..lineTo(35 * s, 40 * s)
+      ..lineTo(5 * s, 40 * s)
+      ..close();
+    canvas.drawPath(shoulders, primary);
+
+    canvas.drawCircle(Offset(20 * s, 17.5 * s), 7.4 * s, white);
+    canvas.drawCircle(Offset(20 * s, 17.5 * s), 7.4 * s, line);
+
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(10.5 * s, 5.2 * s, 19 * s, 7.6 * s),
+        Radius.circular(1.6 * s),
+      ),
+      primary,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(8.2 * s, 11.6 * s, 23.6 * s, 2.5 * s),
+        Radius.circular(1.2 * s),
+      ),
+      primary,
+    );
+
+    final Paint cross = Paint()
+      ..color = Colors.white
+      ..strokeWidth = 1.5 * s
+      ..strokeCap = StrokeCap.round;
+    canvas.drawLine(Offset(20 * s, 6.6 * s), Offset(20 * s, 11.2 * s), cross);
+    canvas.drawLine(Offset(17.8 * s, 8.9 * s), Offset(22.2 * s, 8.9 * s), cross);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 
