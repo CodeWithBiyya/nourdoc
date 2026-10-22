@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import '../../core/common/appDialog.dart';
 import '../../core/models/PlanModel.dart';
 import '../../core/repository/Repository.dart';
 import '../../core/services/PlanRequestApiService.dart';
 import '../../core/services/pricing_api_service.dart';
+import '../../core/common/api_envelope.dart';
 import '../../core/common/entitlement_helper.dart';
 import '../../core/storage/hive_storage.dart';
 import '../../app/routes/routs_name.dart';
@@ -31,6 +34,7 @@ class _SubscriptionScreen1State extends State<SubscriptionScreen1> {
   EntitlementRead? entitlementRead;
   String? activatingPlanId;
   bool _planActionInFlight = false;
+  bool _exitDialogOpen = false;
 
   @override
   void initState() {
@@ -108,7 +112,7 @@ class _SubscriptionScreen1State extends State<SubscriptionScreen1> {
 
       setState(() {
         isLoading = false;
-        errorMessage = e.toString();
+        errorMessage = safeErrorText(e);
       });
 
       debugPrint('Error loading plans: $e');
@@ -133,6 +137,14 @@ class _SubscriptionScreen1State extends State<SubscriptionScreen1> {
       planId: plan.id,
     );
     if (!mounted) return;
+
+    if (result.isStripeCheckout) {
+      setState(() => activatingPlanId = null);
+      _showMessage(
+        'Stripe checkout was returned. Payment on Stripe is not connected in the app yet, so this plan was not activated.',
+      );
+      return;
+    }
 
     if (!result.isSuccess || result.data == null) {
       if (result.reachedServer) {
@@ -222,9 +234,37 @@ class _SubscriptionScreen1State extends State<SubscriptionScreen1> {
     if (mounted) _loadPlans();
   }
 
+  Future<void> _onBack() async {
+    if (!mounted) return;
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+      return;
+    }
+    if (_exitDialogOpen) return;
+    _exitDialogOpen = true;
+    await showAppDialog<void>(
+      context: context,
+      icon: 'assets/icons/exit_1.png',
+      title: 'Exit the app?',
+      content:
+          'A package is needed before the home screen. Stay and choose one, or exit the app.',
+      secondaryText: 'Stay',
+      primaryText: 'Exit',
+      onPrimary: () => SystemNavigator.pop(),
+    );
+    if (mounted) _exitDialogOpen = false;
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    final canLeaveToPreviousScreen = Navigator.of(context).canPop();
+    return PopScope(
+      canPop: canLeaveToPreviousScreen,
+      onPopInvokedWithResult: (bool didPop, dynamic result) {
+        if (didPop) return;
+        _onBack();
+      },
+      child: Scaffold(
       backgroundColor: const Color(0xFFF7F9FA),
 
       appBar: AppBar(
@@ -249,7 +289,7 @@ class _SubscriptionScreen1State extends State<SubscriptionScreen1> {
                   color: primaryTeal,
                   size: 22,
                 ),
-                onPressed: () => Navigator.pop(context),
+                onPressed: _onBack,
               ),
               const Expanded(
                 child: Text(
@@ -287,6 +327,7 @@ class _SubscriptionScreen1State extends State<SubscriptionScreen1> {
       // =========================
 
       body: _buildBody(),
+    ),
     );
   }
 

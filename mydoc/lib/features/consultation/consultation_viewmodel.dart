@@ -4,7 +4,9 @@ import '../../core/network/api_response.dart';
 import '../../core/models/BookedPatientData.dart';
 import '../../core/repository/Repository.dart';
 import '../../core/storage/hive_storage.dart';
+import '../../core/common/api_envelope.dart';
 import '../../core/common/noInternet.dart';
+import '../../core/common/utils.dart';
 
 
 class ConsultationViewModel with ChangeNotifier {
@@ -98,7 +100,7 @@ class ConsultationViewModel with ChangeNotifier {
     if (_isDisposed) return;
 
     setBookedList(
-      ApiResponse.error(error.toString()),
+      ApiResponse.error(safeErrorText(error)),
     );
   }
 }
@@ -268,12 +270,17 @@ class ConsultationViewModel with ChangeNotifier {
       // SERVER / TIMEOUT ERROR
       // ----------------------------------------------------------
 
-      if (errorStr.contains("timeout") ||
-          errorStr.contains("server") ||
-          errorStr.contains("502")) {
+      final code = utils.getStatusCodeFromMessage(errorStr);
+      if (errorStr.contains("timeout")) {
         return {
           "custom_status": 500,
-          "message": "Service upgrade in progress. Try again later.",
+          "message": "The server took too long to respond. Try again.",
+        };
+      }
+      if (code >= 500) {
+        return {
+          "custom_status": 500,
+          "message": "The booking could not be saved. Try again.",
         };
       }
 
@@ -283,7 +290,7 @@ class ConsultationViewModel with ChangeNotifier {
 
       return {
         "custom_status": 400,
-        "message": "Unable to save. Please try again.",
+        "message": safeErrorText(e),
       };
     }
   }

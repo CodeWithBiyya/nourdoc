@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import '../../core/network/api_response.dart';
 import '../../core/models/EncounterListModel.dart';
 import '../../core/repository/Repository.dart';
+import '../../core/common/api_envelope.dart';
 import '../../core/storage/hive_storage.dart';
 
 class MyEncounterViewModel with ChangeNotifier {
@@ -68,7 +69,11 @@ class MyEncounterViewModel with ChangeNotifier {
     })
         .onError((error, stackTrace) {
       if (_isDisposed) return; // ✅ Error aane se pehle disposed check
-      setEncounterList(ApiResponse.error(error.toString()));
+      final raw = error.toString();
+      final kept = raw.toLowerCase().contains('status code 401')
+          ? 'status code 401'
+          : safeErrorText(error ?? 'Something went wrong');
+      setEncounterList(ApiResponse.error(kept));
       if (kDebugMode) print("getEncounters error: $error");
     });
   }

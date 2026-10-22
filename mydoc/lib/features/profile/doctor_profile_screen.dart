@@ -8,6 +8,7 @@ import 'package:medicalai/app/routes/routs_name.dart';
 import 'package:medicalai/features/profile/doctor_profile_viewmodel.dart';
 import 'package:medicalai/app/theme/colors.dart';
 import 'package:medicalai/core/storage/hive_storage.dart';
+import '../../core/common/api_envelope.dart';
 import '../../core/common/utils.dart';
 
 class DoctorProfileScreen extends StatefulWidget {
@@ -413,8 +414,8 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                               dynamic response = await DoctorProfileViewModel().updateDoctorProfile(email, datamap);
 
                               // 🚩 FIX 3: Response String Check (Checking both common success messages)
-                              String resStr = response.toString();
-                              if (response != null && (resStr.contains("Profile Updated") || resStr.contains("Update Successful"))) {
+                              String resStr = response.toString().toLowerCase();
+                              if (response != null && (resStr.contains("profile updated") || resStr.contains("update successful"))) {
 
                                 // Update Hive
                                 await Future.wait([
@@ -429,7 +430,10 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                                 utils.toastMessage("Profile Updated Successfully");
                                 if(mounted) Navigator.pop(context);
                               } else {
-                                utils.toastMessage("Failed: $response");
+                                utils.toastMessage(shownApiText(
+                                  response,
+                                  fallback: 'Could not update the profile.',
+                                ));
                               }
                             } else {
                               // ================= REGISTER LOGIC =================
@@ -473,12 +477,15 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                                   (route) => false,
                                 );
                               } else {
-                                utils.toastMessage(responses != null ? (responses["message"] ?? "Failed") : "Error");
+                                utils.toastMessage(shownApiText(
+                                  responses,
+                                  fallback: 'Registration failed.',
+                                ));
                               }
                             }
                           } catch (e) {
                             debugPrint("Error: $e");
-                            utils.toastMessage("Something went wrong");
+                            utils.toastMessage(safeErrorText(e));
                           }
                         },
                         child: Text(isProfil ? "Update" : "Register",

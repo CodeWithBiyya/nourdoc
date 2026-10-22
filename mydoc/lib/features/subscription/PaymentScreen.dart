@@ -125,9 +125,17 @@ class _PaymentScreenState extends State<PaymentScreen> {
       return;
     }
 
+    if (result.isStripeCheckout) {
+      _showMessage(
+        'Stripe checkout was returned. Payment on Stripe is not connected in the app yet, so this plan was not activated.',
+      );
+      setState(() => isLoading = false);
+      return;
+    }
+
     final entitlementId = _entitlementId(result.data!);
     if (entitlementId == null) {
-      _showMessage('Backend did not return an entitlement id.');
+      _showMessage('The plan was not started.');
       setState(() => isLoading = false);
       return;
     }

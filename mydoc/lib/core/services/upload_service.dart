@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 import 'package:http/http.dart' as http;
+import '../common/api_envelope.dart';
 import '../models/pending_consultation.dart';
 import '../storage/hive_storage.dart';
 import 'app_url.dart';
@@ -75,7 +76,7 @@ class SyncService {
       if (![200, 201, 409].contains(response.statusCode)) return null;
       if (response.body.trim().isEmpty) return null;
 
-      final decoded = jsonDecode(response.body);
+      final decoded = unwrapApiData(jsonDecode(response.body));
       final Map<String, dynamic> data = decoded is Map
           ? (decoded["response"] is Map
               ? Map<String, dynamic>.from(decoded["response"])

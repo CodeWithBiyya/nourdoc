@@ -41,6 +41,8 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
+import '../common/api_envelope.dart';
+
 class EntitlementApiService {
   static const String baseUrl =  
       'https://8wfvyjajy1.execute-api.us-east-1.amazonaws.com';
@@ -88,10 +90,13 @@ class EntitlementApiService {
       return {};
     }
 
-    final decoded = jsonDecode(response.body);
+    final decoded = unwrapApiData(jsonDecode(response.body));
 
     if (decoded is Map<String, dynamic>) {
       return decoded;
+    }
+    if (decoded is Map) {
+      return Map<String, dynamic>.from(decoded);
     }
 
     return {};
@@ -136,10 +141,13 @@ class EntitlementApiService {
       );
     }
 
-    final decoded = jsonDecode(response.body);
+    final decoded = unwrapApiData(jsonDecode(response.body));
 
     if (decoded is Map<String, dynamic>) {
       return decoded;
+    }
+    if (decoded is Map) {
+      return Map<String, dynamic>.from(decoded);
     }
 
     return {};

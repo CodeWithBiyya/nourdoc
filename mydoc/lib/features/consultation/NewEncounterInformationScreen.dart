@@ -62,12 +62,13 @@ class _NewEncounterInformationScreen extends State<NewEncounterInformationScreen
   Future<bool> _checkEntryAccess() async {
     final snapshot = await utils.requireProtectedAccess(context, showProgress: false);
     if (!mounted) return false;
-    if (snapshot == null) {
-      final route = ModalRoute.of(context);
-      if (route != null && route.isCurrent) Navigator.pop(context);
+    if (snapshot != null) return true;
+    if (utils.planBlocksConsultation) {
+      Navigator.of(context).pop();
       return false;
     }
-    return true;
+    _entryAccess = null;
+    return false;
   }
 
   void _precomputeDropdowns() {
@@ -441,12 +442,15 @@ class _NewEncounterInformationScreen extends State<NewEncounterInformationScreen
       navigationArgs.removeWhere((key, value) => value == null || value.toString().isEmpty);
 
       utils.checkEntitlementAndLimit(context).then((allowed) {
+        if (!mounted) return;
         if (allowed) {
           Navigator.pushNamed(
             context,
             RouteNames.audioRecorderScreen,
             arguments: navigationArgs,
           );
+        } else if (utils.planBlocksConsultation) {
+          Navigator.of(context).pop();
         }
       });
     } else {

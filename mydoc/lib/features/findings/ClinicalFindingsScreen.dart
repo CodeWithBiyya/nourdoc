@@ -15,6 +15,7 @@ import 'package:provider/provider.dart';
 import '../../core/models/encounter_information_model.dart';
 import '../../app/routes/routs_name.dart';
 import '../../core/services/app_url.dart';
+import '../../core/common/api_envelope.dart';
 import '../../core/common/generate_pdf.dart';
 
 class ClinicalFindingsScreen extends StatefulWidget {
@@ -154,7 +155,7 @@ class _ClinicalFindingsScreenState extends State<ClinicalFindingsScreen> {
     debugPrint("========================================");
 
     if (response.statusCode == 200) {
-      final decoded = jsonDecode(response.body);
+      final decoded = unwrapApiData(jsonDecode(response.body));
 
       debugPrint("Decoded API data: $decoded");
 
@@ -208,7 +209,8 @@ class _ClinicalFindingsScreenState extends State<ClinicalFindingsScreen> {
         // Uri.parse('https://4ugllkifsb.execute-api.us-east-1.amazonaws.com/audio/$_id') //PRODUCTION
       );
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+        final data = unwrapApiData(jsonDecode(response.body));
+        if (data is! Map) return;
         String audioUrl = data['audio_url'];
         await _audioPlayer?.setUrl(audioUrl);
         _isAudioInitialized = true;

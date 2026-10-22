@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
 
+import '../common/api_envelope.dart';
 import 'app_exceptions.dart';
 import 'base_api_services.dart';
 
@@ -55,7 +56,7 @@ class NetworkApiService extends BaseApiService {
     switch (response.statusCode) {
       case 200:
       case 201:
-        return jsonDecode(response.body);
+        return unwrapApiData(jsonDecode(response.body));
 
       case 404:
       // 🚩 KEY CHANGE: Instead of throwing an error, return a custom map
@@ -70,13 +71,12 @@ class NetworkApiService extends BaseApiService {
         return jsonDecode(response.body);
 
       case 401:
-      // Unauthorized logic remains
         throw UnauthorisedException('status code 401');
 
       default:
-      // Generic error for everything else
+        final detail = safeDetail(response.body);
         throw FetchDataException(
-          'Error occurred with status code ${response.statusCode}',
+          detail ?? 'status code ${response.statusCode}',
         );
     }
   }

@@ -10,6 +10,7 @@ import 'package:medicalai/core/storage/hive_storage.dart';
 import 'package:medicalai/core/common/utils.dart';
 import '../../core/models/EncounterListModel.dart';
 import '../../app/routes/routs_name.dart';
+import '../../core/common/api_envelope.dart';
 import '../../core/common/noInternet.dart';
 
 class FeedbackCollectionScreen extends StatefulWidget {
@@ -376,16 +377,16 @@ class _FeedbackCollectionScreenState extends State<FeedbackCollectionScreen> {
 // Conflict check
       else if (response["detail"] != null &&
           response["detail"].toString().toLowerCase().contains("already submitted")) {
-        utils.toastMessage(response["detail"]);
+        utils.toastMessage(shownApiText(response, fallback: 'Feedback was already submitted.'));
       }
 // Fallback for any other error
       else {
-        utils.toastMessage(response["message"] ?? response["detail"] ?? "Submission failed");
+        utils.toastMessage(shownApiText(response, fallback: 'Submission failed'));
       }
 
     } catch (e) {
       debugPrint("Feedback Error: $e");
-      utils.toastMessage("Error: ${e.toString()}");
+      utils.toastMessage(safeErrorText(e));
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }

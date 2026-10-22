@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import '../common/api_envelope.dart';
 import '../common/http_result.dart';
 import 'app_url.dart';
 
@@ -141,9 +142,9 @@ class PlanRequestApiService {
       );
     }
 
-    final decoded = jsonDecode(response.body);
+    final decoded = unwrapApiData(jsonDecode(response.body));
 
-    if (decoded is! Map<String, dynamic>) {
+    if (decoded is! Map) {
       throw Exception(
         'Invalid checkout response:\n${response.body}',
       );

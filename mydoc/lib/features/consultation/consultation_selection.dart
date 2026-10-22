@@ -304,22 +304,19 @@ class _ConsultationSelectionScreenState
       ),
       onPressed: () {
         int queueCount = HiveStorage.getOutBoxCount();
-        
 
         // 2. Behavior B: Phone Queue is full (5/5). Must sync to free up space.
-         if (queueCount >= 5) {
+        if (queueCount >= 5) {
           showAppDialog(
             context: context,
+            barrierDismissible: false,
             icon: Icons.cloud_off_rounded,
             title: "Upload Required",
             content: "You have 5 consultations waiting on your device. Please connect to the internet to finish the batch upload.",
             primaryText: "Understood",
             onPrimary: () => Navigator.pop(context),
           );
-        }
-
-        // 3. Behavior A: Both are under 5. Allow new consultation.
-        else {
+        } else {
           Navigator.pushNamed(context, RouteNames.NewEncounterInformationScreen)
               .then((_) => consultationViewModel.getBookedPatients());
         }

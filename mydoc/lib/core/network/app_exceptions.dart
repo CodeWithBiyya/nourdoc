@@ -5,7 +5,9 @@ class AppExceptions implements Exception {
   AppExceptions(this._message, this._prefix);
 
   String toString() {
-    return '$_prefix $_message';
+    final text = _message?.toString().trim() ?? '';
+    if (text.isEmpty) return _prefix.toString();
+    return text;
   }
 }
 

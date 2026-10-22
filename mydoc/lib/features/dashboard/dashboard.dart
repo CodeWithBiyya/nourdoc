@@ -13,6 +13,7 @@ import 'package:http/http.dart' as http; // Add this
 import '../../core/network/status.dart';
 import '../../core/models/EncounterListModel.dart';
 import '../consultation/my_encounters_viewmodel.dart';
+import '../../core/common/api_envelope.dart';
 import '../../core/common/appDialog.dart';
 import '../../app/theme/colors.dart';
 import '../../app/routes/routs_name.dart';
@@ -361,7 +362,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   final response = await http.get(Uri.parse(finalUrl));
 
                   if (response.statusCode == 200) {
-                    final data = jsonDecode(response.body);
+                    final data = unwrapApiData(jsonDecode(response.body));
+                    if (data is! Map) {
+                      print("Profile response had no object in data");
+                    } else {
                     print("Profile Data Received: $data");
 
                     // Data save karein
@@ -374,6 +378,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                     await HiveStorage.setlicenseno(data['license_no'] ?? "N/A");
                     await HiveStorage.setCity(data['city'] ?? "N/A");
+                    }
                   } else {
                     print("API Error: ${response.statusCode} - ${response.body}");
                   }

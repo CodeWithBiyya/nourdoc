@@ -5,6 +5,7 @@ import 'package:medicalai/core/models/encounter_information_model.dart';
 import '../../core/repository/Repository.dart';
 import '../../core/storage/hive_storage.dart';
 import '../../core/common/noInternet.dart';
+import '../../core/common/api_envelope.dart';
 import '../../core/common/utils.dart';
 
 class ClinicalFindingsViewModel with ChangeNotifier {
@@ -45,7 +46,7 @@ class ClinicalFindingsViewModel with ChangeNotifier {
       if (errorStr.contains("timeout")) {
         EnconterData(ApiResponse.error("TIMEOUT"));
       } else {
-        EnconterData(ApiResponse.error(error.toString()));
+        EnconterData(ApiResponse.error(safeErrorText(error ?? 'Something went wrong')));
       }
     });
   }
@@ -109,7 +110,7 @@ class ClinicalFindingsViewModel with ChangeNotifier {
       }
       return value;
     }).onError((error, stackTrace) {
-      utils.toastMessage(error.toString());
+      utils.toastMessage(safeErrorText(error ?? 'Something went wrong'));
       if (kDebugMode) {
 
         print(error.toString());

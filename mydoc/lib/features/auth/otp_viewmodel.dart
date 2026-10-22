@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../core/repository/Repository.dart';
+import '../../core/common/api_envelope.dart';
 import '../../core/common/utils.dart';
 
 class OptViewModel with ChangeNotifier {
@@ -12,7 +13,7 @@ class OptViewModel with ChangeNotifier {
     response = await _myRepo.getDocProfile(token).then((value) {
       return value;
     }).onError((error, stackTrace) {
-      utils.toastMessage(error.toString());
+      utils.toastMessage(safeErrorText(error ?? 'Something went wrong'));
       return null;
     });
     return response;

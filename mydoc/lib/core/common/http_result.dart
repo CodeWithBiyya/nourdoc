@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'api_envelope.dart';
+
 /// One HTTP response, with a message taken from a string or a JSON body.
 class HttpResult {
   final int statusCode;
@@ -46,6 +48,13 @@ class SubscribeResult {
 
   bool get isSuccess => reachedServer && statusCode >= 200 && statusCode < 300;
 
+  /// Paid subscribe returns this instead of an entitlement id.
+  /// The checkout page itself is not opened here.
+  bool get isStripeCheckout {
+    final url = data?['checkout_url']?.toString().trim() ?? '';
+    return url.isNotEmpty;
+  }
+
   static const unreachable = SubscribeResult(
     statusCode: 0,
     message: 'The server could not be reached. The plan was not started.',
@@ -56,7 +65,7 @@ class SubscribeResult {
     Map<String, dynamic>? data;
     if (statusCode >= 200 && statusCode < 300) {
       try {
-        final decoded = jsonDecode(body);
+        final decoded = unwrapApiData(jsonDecode(body));
         if (decoded is Map) data = Map<String, dynamic>.from(decoded);
       } catch (_) {}
     }
@@ -76,32 +85,7 @@ class SubscribeResult {
 }
 
 /// Reads a backend message from plain text, a JSON string, or an object.
+/// SQL, stacks, and raw JSON are left blank so the caller can use its own sentence.
 String messageFromBody(String body) {
-  final raw = body.trim();
-  if (raw.isEmpty) return '';
-
-  try {
-    return _messageFromDecoded(jsonDecode(raw)) ?? raw;
-  } catch (_) {
-    return raw;
-  }
-}
-
-String? _messageFromDecoded(dynamic decoded) {
-  if (decoded is String) {
-    final text = decoded.trim();
-    return text.isEmpty ? null : text;
-  }
-
-  if (decoded is Map) {
-    for (final key in ['message', 'error', 'detail']) {
-      final value = decoded[key];
-      if (value is String && value.trim().isNotEmpty) return value.trim();
-    }
-    if (decoded['response'] != null) {
-      return _messageFromDecoded(decoded['response']);
-    }
-  }
-
-  return null;
+  return safeDetail(body) ?? '';
 }

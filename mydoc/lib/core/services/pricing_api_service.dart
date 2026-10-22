@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import '../common/api_envelope.dart';
 import 'app_url.dart';
 import '../models/PlanModel.dart';
 
@@ -44,9 +45,8 @@ Future<List<PlanModel>> getPlans() async {
       );
     }
 
-    final dynamic decoded = jsonDecode(response.body);
+    final dynamic decoded = unwrapApiData(jsonDecode(response.body));
 
-    // Backend returns a LIST directly
     if (decoded is List) {
       final plans = decoded
           .whereType<Map<String, dynamic>>()

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:medicalai/core/storage/hive_storage.dart';
 
 import '../../app/routes/routs_name.dart';
+import '../../core/common/api_envelope.dart';
 import '../../core/common/utils.dart';
 import 'LoginViewModel.dart';
 
@@ -142,7 +143,7 @@ class _LoginScreen extends State<LoginScreen> {
                             if (context.mounted) utils.flushBarErrorMessages("Invalid credentials or Server Error", context);
                           }
                         } catch (e) {
-                          if (context.mounted) utils.flushBarErrorMessages("Error: ${e.toString()}", context);
+                          if (context.mounted) utils.flushBarErrorMessages(safeErrorText(e), context);
                         } finally {
                           if (context.mounted) {
                             setState(() {

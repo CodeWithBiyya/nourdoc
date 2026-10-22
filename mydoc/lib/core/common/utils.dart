@@ -11,6 +11,10 @@ import 'package:medicalai/app/routes/routs_name.dart';
 import 'package:medicalai/core/common/entitlement_helper.dart';
 
 class utils {
+  /// Set when the latest protected-access check failed because the plan
+  /// cannot be used. A network failure leaves this false.
+  static bool planBlocksConsultation = false;
+
   // 🟢 FIXED: Added Null safety and default values
   static toastMessage(String? message) {
     if (message == null || message.isEmpty) {
@@ -107,6 +111,8 @@ class utils {
     int? upcomingSeconds,
     bool showProgress = true,
   }) async {
+    planBlocksConsultation = false;
+
     if (showProgress) {
       showDialog(
         context: context,
@@ -122,6 +128,7 @@ class utils {
     if (read.result == EntitlementFetchResult.network) {
       await showAppDialog(
         context: context,
+        barrierDismissible: false,
         icon: Icons.wifi_off,
         title: 'Could not verify plan',
         content: 'Your plan could not be checked. Nothing was started. Try again when you are online.',
@@ -133,7 +140,8 @@ class utils {
 
     final snapshot = read.snapshot;
     if (snapshot == null || !snapshot.canUseProtectedFeatures) {
-      _showUpgradeDialog(
+      planBlocksConsultation = true;
+      await _showUpgradeDialog(
         context,
         snapshot?.blockReason ?? 'Your plan could not be read. Try again.',
       );
@@ -206,19 +214,20 @@ class utils {
   It now opens RouteNames.subscription_screen ("View plans").
   */
 
-  static void _showUpgradeDialog(BuildContext context, String message) {
-    showAppDialog(
+  static Future<void> _showUpgradeDialog(BuildContext context, String message) async {
+    final openPlans = await showAppDialog<bool>(
       context: context,
+      barrierDismissible: false,
       icon: Icons.lock_outline,
-      title: 'Plan limit',
+      title: 'Consultation unavailable',
       content: message,
-      primaryText: 'View plans',
-      onPrimary: () {
-        Navigator.pop(context);
-        Navigator.pushNamed(context, RouteNames.subscription_screen);
-      },
-      secondaryText: 'Cancel',
-      onSecondary: () => Navigator.pop(context),
+      primaryText: 'View Plans',
+      onPrimary: () => Navigator.pop(context, true),
+      secondaryText: 'Close',
+      onSecondary: () => Navigator.pop(context, false),
     );
+    if (openPlans == true && context.mounted) {
+      await Navigator.pushNamed(context, RouteNames.subscription_screen);
+    }
   }
 }

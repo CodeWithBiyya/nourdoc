@@ -251,6 +251,8 @@ import 'dart:async';
 
 // import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:medicalai/core/network/api_log.dart';
 import 'package:medicalai/core/repository/Repository.dart';
 import 'package:medicalai/app/routes/route.dart';
 import 'package:medicalai/app/routes/routs_name.dart';
@@ -276,27 +278,28 @@ final GlobalKey<NavigatorState> navigatorKey =
 // MAIN
 // ============================================================
 
-Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+Future<void> main() {
+  return http.runWithClient(() async {
+    WidgetsFlutterBinding.ensureInitialized();
 
-  print("🟢 MAIN STARTED");
+    print("🟢 MAIN STARTED");
 
-  try {
-    await Hive.initFlutter();
-    await HiveStorage.init();
+    try {
+      await Hive.initFlutter();
+      await HiveStorage.init();
 
-    print("✅ Hive Basic Init Done");
-  } catch (e) {
-    print("❌ CRITICAL ERROR: $e");
-  }
+      print("✅ Hive Basic Init Done");
+    } catch (e) {
+      print("❌ CRITICAL ERROR: $e");
+    }
 
-  // runApp(const MyApp());
-  runApp(
-  ChangeNotifierProvider(
-    create: (_) => ConsultationViewModel(),
-    child: const MyApp(),
-  ),
-);
+    runApp(
+      ChangeNotifierProvider(
+        create: (_) => ConsultationViewModel(),
+        child: const MyApp(),
+      ),
+    );
+  }, LoggingClient.new);
 }
 
 

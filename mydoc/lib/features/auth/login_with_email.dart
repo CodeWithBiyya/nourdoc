@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:medicalai/app/theme/colors.dart';
 
 import '../../app/routes/routs_name.dart';
+import '../../core/common/api_envelope.dart';
 import '../../core/common/utils.dart';
 import 'login_with_email_viewmodel.dart';
 import '../../core/storage/hive_storage.dart';
@@ -406,7 +407,7 @@ class _loginwithEmail extends State<LoginWithEmail> {
       }
     } catch (e) {
       if (mounted) setState(() => _isLoading = false);
-      utils.toastMessage("Error: $e");
+      utils.toastMessage(safeErrorText(e));
     }
   }
 

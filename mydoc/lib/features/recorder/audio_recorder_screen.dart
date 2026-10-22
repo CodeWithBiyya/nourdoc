@@ -699,15 +699,17 @@ debugPrint("========================================");
                                   Container(
                                     height: 75,
                                     width: 75,
-                                    decoration: const BoxDecoration(
+                                    decoration: BoxDecoration(
                                       shape: BoxShape.circle,
-                                      color: Colors.black, // Outer border/padding area
+                                      color: _isLoading ? Colorprimary : Colors.black,
                                     ),
                                     padding: const EdgeInsets.all(4),
                                     child: ElevatedButton(
                                       style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.white, // Circle color is white
-                                        foregroundColor: Colors.black, // Icon color is black
+                                        backgroundColor: Colors.white,
+                                        disabledBackgroundColor: _isLoading ? Colors.white : null,
+                                        foregroundColor: Colors.black,
+                                        disabledForegroundColor: _isLoading ? Colorprimary : null,
                                         shape: const CircleBorder(),
                                         elevation: 5,
                                         padding: EdgeInsets.zero,
@@ -719,7 +721,7 @@ debugPrint("========================================");
                                       child: Icon(
                                         _isPaused ? Icons.play_arrow : Icons.pause,
                                         size: 35,
-                                        color: Colors.black, // Ensures icon is black
+                                        color: _isLoading ? Colorprimary : Colors.black,
                                       ),
                                     ),
                                   ),
@@ -771,7 +773,13 @@ debugPrint("========================================");
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
       title: const Column(children: [Icon(Icons.cloud_upload_outlined, size: 55, color: Colorprimary), Text("Uploading", style: TextStyle(color: Colorprimary))]),
       content: Column(mainAxisSize: MainAxisSize.min, children: [
-        LinearProgressIndicator(value: _uploadProgress, color: Colorprimary),
+        LinearProgressIndicator(
+          value: _uploadProgress,
+          color: Colorprimary,
+          backgroundColor: Colorprimarylight,
+          minHeight: 6,
+          borderRadius: BorderRadius.circular(6),
+        ),
         const SizedBox(height: 10), Text("${(_uploadProgress * 100).toInt()}% Uploaded")
       ]),
       actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text("Wait"))],
