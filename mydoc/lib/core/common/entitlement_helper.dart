@@ -121,6 +121,15 @@ class EntitlementHelper {
   static final ValueNotifier<EntitlementSnapshot?> display =
       ValueNotifier<EntitlementSnapshot?>(null);
 
+  /// Bumped when the signed-in doctor changes so an in-flight read
+  /// cannot be applied to the next account.
+  static int accountGeneration = 0;
+
+  static void noteAccountChanged() {
+    accountGeneration++;
+    display.value = null;
+  }
+
   static void publish(EntitlementRead read) {
     if (read.result == EntitlementFetchResult.loaded) {
       display.value = read.snapshot;

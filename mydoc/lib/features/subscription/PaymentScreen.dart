@@ -7,6 +7,7 @@ import '../../core/services/PlanRequestApiService.dart';
 import '../../core/common/entitlement_helper.dart';
 import '../../core/storage/hive_storage.dart';
 import 'SuccessScreen.dart';
+import 'payment_return.dart';
 import 'subscription_guard.dart';
 
 class PaymentScreen extends StatefulWidget {
@@ -85,103 +86,113 @@ class _PaymentScreenState extends State<PaymentScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => isLoading = true);
+    try {
+      if (PaymentReturn.instance.checkoutJustOpened) {
+        _showMessage('A payment page was just opened. Finish that payment before trying again.');
+        return;
+      }
 
-    if (await subscriptionBlocked(context) || !mounted) {
-      if (mounted) setState(() => isLoading = false);
-      return;
-    }
+      if (await subscriptionBlocked(context) || !mounted) return;
 
-    final doctorId = (HiveStorage.getUserEmail() ?? '').trim();
-    if (doctorId.isEmpty) {
-      _showMessage('Doctor is not logged in.');
-      if (mounted) setState(() => isLoading = false);
-      return;
-    }
+      final doctorId = (HiveStorage.getUserEmail() ?? '').trim();
+      if (doctorId.isEmpty) {
+        _showMessage('Doctor is not logged in.');
+        return;
+      }
 
-    final result = await _planRequestApiService.subscribeToPlan(
-      doctorId: doctorId,
-      planId: widget.selectedPlan.id,
-    );
-    if (!mounted) return;
-
-    if (!result.reachedServer) {
-      _showMessage(result.message);
-      setState(() => isLoading = false);
-      return;
-    }
-
-    if (result.statusCode == 400) {
-      await Repository().readDoctorEntitlement();
+      final result = await _planRequestApiService.subscribeToPlan(
+        doctorId: doctorId,
+        planId: widget.selectedPlan.id,
+      );
       if (!mounted) return;
-      _showMessage(result.message);
-      setState(() => isLoading = false);
-      _goToDashboard();
-      return;
-    }
 
-    if (!result.isSuccess || result.data == null) {
-      _showMessage(result.message);
-      setState(() => isLoading = false);
-      return;
-    }
+      if (!result.reachedServer) {
+        _showMessage(result.message);
+        return;
+      }
 
-    if (result.isStripeCheckout) {
-      _showMessage(
-        'Stripe checkout was returned. Payment on Stripe is not connected in the app yet, so this plan was not activated.',
-      );
-      setState(() => isLoading = false);
-      return;
-    }
+      if (result.statusCode == 400) {
+        await Repository().readDoctorEntitlement();
+        if (!mounted) return;
+        _showMessage(result.message);
+        _goToDashboard();
+        return;
+      }
 
-    final entitlementId = _entitlementId(result.data!);
-    if (entitlementId == null) {
-      _showMessage('The plan was not started.');
-      setState(() => isLoading = false);
-      return;
-    }
+      if (!result.isSuccess || result.data == null) {
+        _showMessage(result.message);
+        return;
+      }
 
-    // Previous success path opened the receipt from the subscribe id
-    // without reading the entitlement again. A 400 called
-    // _goToDashboard() with no refresh.
-    final read = await Repository().readDoctorEntitlement();
-    final confirmed = read.snapshot;
-    final selectedName = widget.selectedPlan.planCode.toUpperCase();
-    final matches = confirmed != null &&
-        (confirmed.planId == widget.selectedPlan.id ||
-            confirmed.planName.toUpperCase() == selectedName);
+      if (result.isStripeCheckout) {
+        var opened = false;
+        try {
+          opened = await PaymentReturn.instance.openCheckout(
+            checkoutUrl: result.data?['checkout_url']?.toString() ?? '',
+            planId: widget.selectedPlan.id,
+            sessionId: result.data?['session_id']?.toString(),
+          );
+        } catch (_) {
+          debugPrint('Checkout page could not be opened.');
+        }
+        if (!mounted) return;
+        _showMessage(
+          opened
+              ? 'The Stripe payment page is open in the browser. This plan stays unchanged until it is confirmed.'
+              : 'The payment page could not be opened. Nothing was confirmed. You can try again.',
+        );
+        return;
+      }
 
-    // Receipt requires the refreshed plan to be the one just bought,
-    // still before expires_at, and with remaining_seconds > 0.
-    // An entitlement id alone is not enough.
-    if (confirmed == null || !matches || !confirmed.canUseProtectedFeatures) {
-      _showMessage(
-        'Payment was sent, but the plan is not active yet. Check Plans before trying again.',
-      );
-      if (mounted) setState(() => isLoading = false);
-      return;
-    }
+      final entitlementId = _entitlementId(result.data!);
+      if (entitlementId == null) {
+        _showMessage('The plan was not started.');
+        return;
+      }
 
-    if (!mounted) return;
+      // Previous success path opened the receipt from the subscribe id
+      // without reading the entitlement again. A 400 called
+      // _goToDashboard() with no refresh.
+      final read = await Repository().readDoctorEntitlement();
+      final confirmed = read.snapshot;
+      final selectedName = widget.selectedPlan.planCode.toUpperCase();
+      final matches = confirmed != null &&
+          (confirmed.planId == widget.selectedPlan.id ||
+              confirmed.planName.toUpperCase() == selectedName);
 
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (_) => SuccessScreen(
-          selectedPlan: widget.selectedPlan,
-          checkoutMethod: widget.paymentMethod,
-          paymentLabel: isCreditCard ? 'Credit Card' : 'Bank Transfer',
-          cardNumber: isCreditCard ? cardController.text : '',
-          transactionId: entitlementId,
-          doctorName: _doctorName(),
-          expiresOn: confirmed.expiresAt == null
-              ? ''
-              : '${confirmed.expiresAt!.day}/${confirmed.expiresAt!.month}/${confirmed.expiresAt!.year}',
-          remainingLabel: EntitlementHelper.formatSeconds(confirmed.remainingSeconds),
-          includedLabel: EntitlementHelper.formatSeconds(confirmed.allocatedSeconds),
+      // Receipt requires the refreshed plan to be the one just bought,
+      // still before expires_at, and with remaining_seconds > 0.
+      // An entitlement id alone is not enough.
+      if (confirmed == null || !matches || !confirmed.canUseProtectedFeatures) {
+        _showMessage(
+          'Payment was sent, but the plan is not active yet. Check Plans before trying again.',
+        );
+        return;
+      }
+
+      if (!mounted) return;
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => SuccessScreen(
+            selectedPlan: widget.selectedPlan,
+            checkoutMethod: widget.paymentMethod,
+            paymentLabel: isCreditCard ? 'Credit Card' : 'Bank Transfer',
+            cardNumber: isCreditCard ? cardController.text : '',
+            transactionId: entitlementId,
+            doctorName: _doctorName(),
+            expiresOn: confirmed.expiresAt == null
+                ? ''
+                : '${confirmed.expiresAt!.day}/${confirmed.expiresAt!.month}/${confirmed.expiresAt!.year}',
+            remainingLabel: EntitlementHelper.formatSeconds(confirmed.remainingSeconds),
+            includedLabel: EntitlementHelper.formatSeconds(confirmed.allocatedSeconds),
+          ),
         ),
-      ),
-    );
-    if (mounted) setState(() => isLoading = false);
+      );
+    } finally {
+      if (mounted) setState(() => isLoading = false);
+    }
   }
 
   void _showMessage(String message) {

@@ -11,6 +11,7 @@ import '../../core/storage/hive_storage.dart';
 import '../../app/routes/routs_name.dart';
 import '../../app/theme/colors.dart';
 import 'Checkout.dart';
+import 'payment_return.dart';
 import 'subscription_guard.dart';
 
 class SubscriptionScreen1 extends StatefulWidget {
@@ -20,7 +21,8 @@ class SubscriptionScreen1 extends StatefulWidget {
   State<SubscriptionScreen1> createState() => _SubscriptionScreen1State();
 }
 
-class _SubscriptionScreen1State extends State<SubscriptionScreen1> {
+class _SubscriptionScreen1State extends State<SubscriptionScreen1>
+    with WidgetsBindingObserver {
   int? expandedIndex;
 
   final Color primaryTeal = Colorprimary;
@@ -39,7 +41,21 @@ class _SubscriptionScreen1State extends State<SubscriptionScreen1> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadPlans();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && mounted && !isLoading) {
+      _loadPlans();
+    }
   }
 
   EntitlementSnapshot? get _entitlement => entitlementRead?.snapshot;
@@ -81,8 +97,8 @@ class _SubscriptionScreen1State extends State<SubscriptionScreen1> {
     if (current != null && current.isExpired && current.isTrial && plan.planCode.toUpperCase() == 'TRIAL') {
       return 'Trial ended';
     }
-    if (current != null && current.blocksAnotherPurchase && !_samePlan(plan)) {
-      return 'Activate plan';
+    if (current != null && current.blocksAnotherPurchase) {
+      return 'Unavailable';
     }
     // GET /plans/entitlement does not say whether a trial was used before
     // when no entitlement is returned, and an expired paid plan does not
@@ -130,59 +146,71 @@ class _SubscriptionScreen1State extends State<SubscriptionScreen1> {
       return;
     }
 
+    if (PaymentReturn.instance.checkoutJustOpened) {
+      _showMessage('A payment page was just opened. Finish that payment before trying again.');
+      return;
+    }
+
     setState(() => activatingPlanId = plan.id);
-
-    final result = await PlanRequestApiService().subscribeToPlan(
-      doctorId: doctorId,
-      planId: plan.id,
-    );
-    if (!mounted) return;
-
-    if (result.isStripeCheckout) {
-      setState(() => activatingPlanId = null);
-      _showMessage(
-        'Stripe checkout was returned. Payment on Stripe is not connected in the app yet, so this plan was not activated.',
+    try {
+      final result = await PlanRequestApiService().subscribeToPlan(
+        doctorId: doctorId,
+        planId: plan.id,
       );
-      return;
-    }
+      if (!mounted) return;
 
-    if (!result.isSuccess || result.data == null) {
-      if (result.reachedServer) {
-        final read = await Repository().readDoctorEntitlement();
+      if (result.isStripeCheckout) {
+        var opened = false;
+        try {
+          opened = await PaymentReturn.instance.openCheckout(
+            checkoutUrl: result.data?['checkout_url']?.toString() ?? '',
+            planId: plan.id,
+            sessionId: result.data?['session_id']?.toString(),
+          );
+        } catch (_) {
+          debugPrint('Checkout page could not be opened.');
+        }
         if (!mounted) return;
-        setState(() {
-          entitlementRead = read;
-          activatingPlanId = null;
-        });
-      } else {
-        setState(() => activatingPlanId = null);
+        _showMessage(
+          opened
+              ? 'The Stripe payment page is open in the browser. This plan stays unchanged until it is confirmed.'
+              : 'The payment page could not be opened. Nothing was confirmed. You can try again.',
+        );
+        return;
       }
-      _showMessage(result.message);
-      return;
+
+      if (!result.isSuccess || result.data == null) {
+        if (result.reachedServer) {
+          final read = await Repository().readDoctorEntitlement();
+          if (!mounted) return;
+          setState(() => entitlementRead = read);
+        }
+        _showMessage(result.message);
+        return;
+      }
+
+      final read = await Repository().readDoctorEntitlement();
+      if (!mounted) return;
+
+      final confirmed = read.snapshot;
+      final matches = confirmed != null &&
+          (confirmed.planId == plan.id ||
+              confirmed.planName.toUpperCase() == plan.planCode.toUpperCase());
+
+      if (confirmed == null || !matches || !confirmed.canUseProtectedFeatures) {
+        setState(() => entitlementRead = read);
+        _showMessage('The trial could not be confirmed. Nothing else was changed.');
+        return;
+      }
+
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        RouteNames.dashboard,
+        (route) => false,
+      );
+    } finally {
+      if (mounted) setState(() => activatingPlanId = null);
     }
-
-    final read = await Repository().readDoctorEntitlement();
-    if (!mounted) return;
-
-    final confirmed = read.snapshot;
-    final matches = confirmed != null &&
-        (confirmed.planId == plan.id ||
-            confirmed.planName.toUpperCase() == plan.planCode.toUpperCase());
-
-    if (confirmed == null || !matches || !confirmed.canUseProtectedFeatures) {
-      setState(() {
-        entitlementRead = read;
-        activatingPlanId = null;
-      });
-      _showMessage('The trial could not be confirmed. Nothing else was changed.');
-      return;
-    }
-
-    Navigator.pushNamedAndRemoveUntil(
-      context,
-      RouteNames.dashboard,
-      (route) => false,
-    );
   }
 
   void _showMessage(String message) {
@@ -541,16 +569,7 @@ class _SubscriptionScreen1State extends State<SubscriptionScreen1> {
                         _actionButton(
                           'Renew',
                           blocked ? const Color(0xFFE6EBED) : primaryTeal,
-                          blocked
-                              ? null
-                              : () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => Checkout(selectedPlan: plan),
-                                    ),
-                                  );
-                                },
+                          blocked ? null : () => _onPlanAction(plan),
                         ),
                     ],
                   ),
@@ -643,6 +662,19 @@ class _SubscriptionScreen1State extends State<SubscriptionScreen1> {
     }
 
     final current = read.snapshot;
+    if (current != null && current.blocksAnotherPurchase) {
+      final name = current.planName.isEmpty ? 'current' : current.planName;
+      final text = current.canUseProtectedFeatures
+          ? 'You already have an active $name plan. Another plan cannot be started.'
+          : current.blockReason;
+      return _statusCard(
+        text,
+        action: TextButton(
+          onPressed: () => Navigator.pushNamed(context, RouteNames.current_plan),
+          child: const Text('View current plan'),
+        ),
+      );
+    }
     if (current == null || !current.hasEntitlement) {
       return _statusCard('No plan is subscribed.');
     }

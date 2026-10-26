@@ -1,9 +1,33 @@
+import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import '../common/entitlement_helper.dart';
 import '../models/pending_consultation.dart';
+
+/// Recovery hint for one doctor's Stripe checkout.
+/// This is not an entitlement and must not grant access.
+class PendingStripeCheckout {
+  final String doctorEmail;
+  final String planId;
+  final String? sessionId;
+  final DateTime? openedAt;
+
+  const PendingStripeCheckout({
+    required this.doctorEmail,
+    required this.planId,
+    this.sessionId,
+    this.openedAt,
+  });
+}
 
 class HiveStorage {
   static late Box _box;
   static late Box<PendingConsultation> _outbox;
+  static Box? _stripeBox;
+
+  @visibleForTesting
+  static void debugBindStripeBox(Box box) {
+    _stripeBox = box;
+  }
 
   /// Local feedback milestone. Not the plan balance.
   /// A usable entitlement is not blocked by this count.
@@ -56,6 +80,11 @@ class HiveStorage {
     // 🔥 CRITICAL CHANGE: Isko await MAT karein.
     // Isay background mein chalne dein taaki UI block na ho.
     discardIncompleteUploads();
+    try {
+      _stripeBox = await Hive.openBox('stripe_checkout_recovery');
+    } catch (e) {
+      print('Stripe checkout recovery box was not opened: $e');
+    }
   }
 
   static Future<void> discardIncompleteUploads() async {
@@ -125,7 +154,12 @@ class HiveStorage {
   static Future<void> setToken(String token) async => await _box.put('token', token);
   static String? getToken() => _box.get('token');
 
-  static Future<void> setEmail(String email) async => await _box.put('email', email);
+  static Future<void> setEmail(String email) async {
+    final next = email.trim().toLowerCase();
+    final current = (_box.get('email')?.toString() ?? '').trim().toLowerCase();
+    if (current != next) EntitlementHelper.noteAccountChanged();
+    await _box.put('email', email);
+  }
   static String? getEmail() => _box.get('email');
 
   static Future<void> setName(String name) async => await _box.put('name', name);
@@ -255,5 +289,96 @@ static Future<void> removeCompletedBooking(String bookingId) async {
   static Future<void> clearHives() async {
     await _box.clear();
     await _outbox.clear();
+  }
+
+  static const _pendingMapKey = 'stripe_pending_by_doctor';
+
+  /// Checkout hint for this doctor only. Legacy rows with no doctor are ignored.
+  static PendingStripeCheckout? pendingForDoctor(String email) {
+    final key = email.trim().toLowerCase();
+    if (key.isEmpty) return null;
+    final entry = _readPendingMap()[key];
+    if (entry == null) return null;
+    final planId = entry['planId']?.toString().trim() ?? '';
+    if (planId.isEmpty || planId == 'null') return null;
+    final session = entry['sessionId']?.toString().trim() ?? '';
+    final openedAt = entry['at'];
+    return PendingStripeCheckout(
+      doctorEmail: key,
+      planId: planId,
+      sessionId: session.isEmpty || session == 'null' ? null : session,
+      openedAt: openedAt is int ? DateTime.fromMillisecondsSinceEpoch(openedAt) : null,
+    );
+  }
+
+  static Future<void> savePendingStripeCheckout({
+    required String doctorEmail,
+    required String planId,
+    String? sessionId,
+    DateTime? openedAt,
+  }) async {
+    final email = doctorEmail.trim().toLowerCase();
+    final plan = planId.trim();
+    if (email.isEmpty || plan.isEmpty) return;
+    final map = _readPendingMap();
+    final session = sessionId?.trim() ?? '';
+    map[email] = {
+      'planId': plan,
+      if (session.isNotEmpty) 'sessionId': session,
+      if (openedAt != null) 'at': openedAt.millisecondsSinceEpoch,
+    };
+    final box = _stripeBox;
+    if (box == null || !box.isOpen) return;
+    await box.put(_pendingMapKey, map);
+  }
+
+  static Future<void> markPendingCheckoutOpened(String doctorEmail) async {
+    final pending = pendingForDoctor(doctorEmail);
+    if (pending == null) return;
+    await savePendingStripeCheckout(
+      doctorEmail: pending.doctorEmail,
+      planId: pending.planId,
+      sessionId: pending.sessionId,
+      openedAt: DateTime.now(),
+    );
+  }
+
+  static Future<void> attachPendingSession({
+    required String doctorEmail,
+    required String sessionId,
+  }) async {
+    final pending = pendingForDoctor(doctorEmail);
+    final session = sessionId.trim();
+    if (pending == null || pending.sessionId != null || session.isEmpty) return;
+    await savePendingStripeCheckout(
+      doctorEmail: pending.doctorEmail,
+      planId: pending.planId,
+      sessionId: session,
+      openedAt: pending.openedAt,
+    );
+  }
+
+  static Future<void> clearPendingStripeCheckoutFor(String doctorEmail) async {
+    final email = doctorEmail.trim().toLowerCase();
+    if (email.isEmpty) return;
+    final map = _readPendingMap();
+    if (map.remove(email) == null) return;
+    final box = _stripeBox;
+    if (box == null || !box.isOpen) return;
+    await box.put(_pendingMapKey, map);
+  }
+
+  static Map<String, Map<String, dynamic>> _readPendingMap() {
+    final box = _stripeBox;
+    if (box == null || !box.isOpen) return {};
+    final raw = box.get(_pendingMapKey);
+    if (raw is! Map) return {};
+    final copy = <String, Map<String, dynamic>>{};
+    for (final entry in raw.entries) {
+      final key = entry.key?.toString().trim().toLowerCase() ?? '';
+      if (key.isEmpty || entry.value is! Map) continue;
+      copy[key] = Map<String, dynamic>.from(entry.value as Map);
+    }
+    return copy;
   }
 }

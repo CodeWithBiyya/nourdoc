@@ -10,6 +10,7 @@ import 'package:medicalai/app/theme/colors.dart';
 import 'package:medicalai/core/storage/hive_storage.dart';
 import '../../core/common/api_envelope.dart';
 import '../../core/common/utils.dart';
+import '../subscription/payment_return.dart';
 
 class DoctorProfileScreen extends StatefulWidget {
   const DoctorProfileScreen({super.key});
@@ -476,6 +477,9 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                                       : RouteNames.subscription_screen,
                                   (route) => false,
                                 );
+                                WidgetsBinding.instance.addPostFrameCallback((_) {
+                                  PaymentReturn.instance.recoverIfPending();
+                                });
                               } else {
                                 utils.toastMessage(shownApiText(
                                   responses,

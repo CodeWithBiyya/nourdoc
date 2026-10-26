@@ -361,9 +361,11 @@ class Repository {
   }
 
   /// Current entitlement. Network failures are not treated as "no plan".
+  /// A result is not published when the signed-in doctor changed while it was loading.
   Future<EntitlementRead> readDoctorEntitlement() async {
     final email = (HiveStorage.getEmail() ?? '').trim().toLowerCase();
     final token = HiveStorage.getToken() ?? '';
+    final generation = EntitlementHelper.accountGeneration;
 
     if (email.isEmpty || token.isEmpty) {
       return EntitlementRead.malformed;
@@ -373,6 +375,13 @@ class Repository {
       final raw = await getEntitlementStatusApi(email, token)
           .timeout(const Duration(seconds: 15));
       final read = EntitlementHelper.interpret(raw);
+      final currentEmail = (HiveStorage.getEmail() ?? '').trim().toLowerCase();
+      final currentToken = HiveStorage.getToken() ?? '';
+      if (generation != EntitlementHelper.accountGeneration ||
+          currentEmail != email ||
+          currentToken != token) {
+        return EntitlementRead.network;
+      }
       EntitlementHelper.publish(read);
       return read;
     } catch (e) {

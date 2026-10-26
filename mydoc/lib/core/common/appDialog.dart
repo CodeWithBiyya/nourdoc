@@ -11,11 +11,13 @@ Future<T?> showAppDialog<T>({
   String? secondaryText,
   VoidCallback? onSecondary,
   bool barrierDismissible = true,
+  bool closeOnSystemBack = true,
 }) {
   return showDialog<T>(
     context: context,
     barrierDismissible: barrierDismissible,
-    builder: (context) => AlertDialog(
+    builder: (dialogContext) {
+      final dialog = AlertDialog(
       backgroundColor: Colors.white,
       surfaceTintColor: Colors.white, // 🔥 Fixes the pinkish tint
       shape: RoundedRectangleBorder(
@@ -98,7 +100,7 @@ Future<T?> showAppDialog<T>({
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
-                  onPressed: onSecondary ?? () => Navigator.pop(context),
+                  onPressed: onSecondary ?? () => Navigator.pop(dialogContext),
                   child: Text(
                     secondaryText,
                     style: const TextStyle(
@@ -112,7 +114,17 @@ Future<T?> showAppDialog<T>({
           ],
         ),
       ],
-    ),
+    );
+    if (closeOnSystemBack) return dialog;
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (bool didPop, dynamic result) {
+        if (didPop) return;
+        Navigator.of(dialogContext).pop();
+      },
+      child: dialog,
+    );
+    },
   );
 }
 

@@ -260,6 +260,7 @@ import 'package:medicalai/core/storage/hive_storage.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:medicalai/features/consultation/consultation_viewmodel.dart';
+import 'package:medicalai/features/subscription/payment_return.dart';
 
 // IMPORTANT:
 // Change the import above if your SuccessScreen is located somewhere else.
@@ -375,14 +376,12 @@ class _AppLifecycleHandlerState
     super.initState();
 
     WidgetsBinding.instance.addObserver(this);
-
-    // _initDeepLinks();
+    PaymentReturn.instance.start(navigatorKey);
   }
 
 
-  // ==========================================================
-  // DEEP LINK INITIALIZATION
-  // ==========================================================
+  // The payment return listener lives in PaymentReturn.
+  // The old handler below is unused and must not run beside it.
 
   // Future<void> _initDeepLinks() async {
   //   _appLinks = AppLinks();
@@ -431,121 +430,6 @@ class _AppLifecycleHandlerState
   // }
 
 
-  // ==========================================================
-  // HANDLE DEEP LINK
-  // ==========================================================
-
-  void _handleDeepLink(Uri uri) {
-    print(
-      "🔗 Handling deep link: $uri",
-    );
-
-    // We only accept:
-    //
-    // nourdoc://payment-success
-    //
-
-    if (uri.scheme != "nourdoc") {
-      print(
-        "⚠️ Unknown scheme: ${uri.scheme}",
-      );
-      return;
-    }
-
-    if (uri.host != "payment-success") {
-      print(
-        "⚠️ Unknown host: ${uri.host}",
-      );
-      return;
-    }
-
-    // // Prevent duplicate navigation.
-    // if (_paymentLinkHandled) {
-    //   print(
-    //     "⚠️ Payment link already handled",
-    //   );
-    //   return;
-    // }
-
-    // _paymentLinkHandled = true;
-
-    // --------------------------------------------------------
-    // GET STRIPE SESSION ID
-    // --------------------------------------------------------
-
-    final String? sessionId =
-        uri.queryParameters["session_id"];
-
-    print(
-      "💳 Stripe Session ID: $sessionId",
-    );
-
-    // --------------------------------------------------------
-    // WAIT UNTIL FLUTTER NAVIGATOR IS READY
-    // --------------------------------------------------------
-
-    Future.delayed(
-      const Duration(milliseconds: 500),
-      () {
-        _openSuccessScreen(sessionId);
-      },
-    );
-  }
-
-
-  // ==========================================================
-  // OPEN SUCCESS SCREEN
-  // ==========================================================
-
-  void _openSuccessScreen(String? sessionId) {
-    final BuildContext? context =
-        navigatorKey.currentState?.overlay?.context;
-
-    if (context == null) {
-      print(
-        "❌ Navigator context is null",
-      );
-
-      // _paymentLinkHandled = false;
-      return;
-    }
-
-    print(
-      "✅ Opening SuccessScreen",
-    );
-
-    /*
-     * IMPORTANT:
-     *
-     * Your SuccessScreen currently requires:
-     *
-     * selectedPlan
-     * paymentMethod
-     * cardNumber
-     *
-     * Those values are NOT available here.
-     *
-     * Therefore, this root-level handler should ideally
-     * verify the Stripe session with your backend and then
-     * obtain the actual plan/payment information.
-     *
-     * For now, DO NOT create fake payment information here.
-     */
-
-    print(
-      "💳 Payment callback received.",
-    );
-
-    // --------------------------------------------------------
-    // TEMPORARY:
-    // If you want to continue using PaymentScreen's own
-    // _handlePaymentCallback(), REMOVE the navigation code
-    // here and let PaymentScreen handle it.
-    //
-    // OR we can modify SuccessScreen to accept only sessionId.
-    // --------------------------------------------------------
-  }
-
 
   // ==========================================================
   // APP RESUMED
@@ -559,7 +443,12 @@ class _AppLifecycleHandlerState
       print(
         "🔄 APP RESUMED",
       );
-      Repository().readDoctorEntitlement();
+      final email = (HiveStorage.getEmail() ?? '').trim().toLowerCase();
+      if (HiveStorage.pendingForDoctor(email) != null) {
+        PaymentReturn.instance.recoverIfPending();
+      } else {
+        Repository().readDoctorEntitlement();
+      }
     }
   }
 
@@ -593,9 +482,7 @@ class _AppLifecycleHandlerState
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-
-    // _linkSubscription?.cancel();
-
+    PaymentReturn.instance.stop();
     super.dispose();
   }
 

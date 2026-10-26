@@ -1347,6 +1347,7 @@ import 'package:pin_code_fields/pin_code_fields.dart';
 import 'package:medicalai/core/common/entitlement_helper.dart';
 import 'package:medicalai/core/repository/Repository.dart';
 import '../../app/routes/routs_name.dart';
+import '../subscription/payment_return.dart';
 import 'login_with_email_viewmodel.dart'; // Ensure this ViewModel matches the new logic
 import 'otp_viewmodel.dart';
 
@@ -1596,6 +1597,9 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                                       ? RouteNames.dashboard
                                       : RouteNames.subscription_screen,
                                 );
+                                WidgetsBinding.instance.addPostFrameCallback((_) {
+                                  PaymentReturn.instance.recoverIfPending();
+                                });
                               } else {
                                 Navigator.pushReplacementNamed(context, RouteNames.login_with_email);
                               }

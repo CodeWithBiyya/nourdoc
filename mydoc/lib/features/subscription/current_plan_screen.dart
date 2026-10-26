@@ -117,9 +117,30 @@ class _CurrentPlanScreenState extends State<CurrentPlanScreen> {
     );
   }
 
+  void _leave() {
+    if (!mounted) return;
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+      return;
+    }
+    final token = (HiveStorage.getToken() ?? '').trim();
+    final signedIn = token.isNotEmpty && token.toLowerCase() != 'null';
+    Navigator.pushReplacementNamed(
+      context,
+      signedIn ? RouteNames.dashboard : RouteNames.splash1,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    final canLeaveToPreviousScreen = Navigator.of(context).canPop();
+    return PopScope(
+      canPop: canLeaveToPreviousScreen,
+      onPopInvokedWithResult: (bool didPop, dynamic result) {
+        if (didPop) return;
+        _leave();
+      },
+      child: Scaffold(
       backgroundColor: const Color(0xFFF7F9FA),
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -133,7 +154,7 @@ class _CurrentPlanScreenState extends State<CurrentPlanScreen> {
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new, color: primaryTeal, size: 22),
-          onPressed: () => Navigator.pop(context),
+          onPressed: _leave,
         ),
         title: const Text(
           'Current plan',
@@ -158,6 +179,7 @@ class _CurrentPlanScreenState extends State<CurrentPlanScreen> {
                 ],
               ),
             ),
+    ),
     );
   }
 
