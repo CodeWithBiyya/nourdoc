@@ -7,8 +7,11 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../app/routes/routs_name.dart';
 import '../../core/common/appDialog.dart';
 import '../../core/common/entitlement_helper.dart';
+import '../../core/models/PlanModel.dart';
 import '../../core/repository/Repository.dart';
+import '../../core/services/pricing_api_service.dart';
 import '../../core/storage/hive_storage.dart';
+import 'SuccessScreen.dart';
 
 /// A payment-return link the app is willing to read.
 /// Anything else is ignored. The link is not proof of payment.
@@ -34,6 +37,34 @@ class PaymentReturnLink {
 }
 
 enum _Notice { notConfirmed, unavailable, cancelled }
+
+/// Startup and resume pass [tellUser] false. Those reads stay quiet.
+/// The warning is only after a return from checkout, and only while the
+/// entitlement is not a usable package.
+bool showUnconfirmedPaymentWarning({
+  required bool tellUser,
+  required EntitlementRead read,
+}) {
+  if (!tellUser) return false;
+  if (read.result == EntitlementFetchResult.network ||
+      read.result == EntitlementFetchResult.malformed) {
+    return false;
+  }
+  return read.snapshot?.canUseProtectedFeatures != true;
+}
+
+/// A cancelled plan with no usable package is not a checkout to confirm.
+bool clearStripeReminderAfterCancel({
+  required bool cancelAccepted,
+  required EntitlementRead refreshed,
+}) {
+  if (!cancelAccepted) return false;
+  if (refreshed.result == EntitlementFetchResult.network ||
+      refreshed.result == EntitlementFetchResult.malformed) {
+    return false;
+  }
+  return refreshed.snapshot?.canUseProtectedFeatures != true;
+}
 
 /// One listener for Stripe's return into the app.
 /// A link only asks for a fresh entitlement read. It never activates a plan.
@@ -263,11 +294,23 @@ class PaymentReturn {
       return;
     }
 
-    // A usable plan is the current subscription. It does not prove which
-    // checkout created it, so the local reminder stays and no success is claimed.
-    // The reminder must not warn on later launches once the plan is usable.
+    // A usable plan is the current subscription. The receipt is shown only
+    // when this return asked for it and the allotted plan is the one in
+    // the checkout reminder. Opening the app later does not show it again.
     final snapshot = read.snapshot;
+    final pending = HiveStorage.pendingForDoctor(email);
+    if (tellUser &&
+        snapshot != null &&
+        pending != null &&
+        snapshot.canUseProtectedFeatures &&
+        snapshot.planId.toLowerCase() == pending.planId.toLowerCase()) {
+      await _openReceipt(email: email, snapshot: snapshot, pending: pending);
+      return;
+    }
     if (snapshot != null && snapshot.canUseProtectedFeatures) return;
+
+    // The reminder alone is not a payment. Opening the app must not warn.
+    if (!showUnconfirmedPaymentWarning(tellUser: tellUser, read: read)) return;
 
     await _present(
       email: email,
@@ -278,6 +321,98 @@ class PaymentReturn {
       content: 'Your payment has not been confirmed yet. Nothing was changed. You can check again.',
       allowRetry: true,
     );
+  }
+
+  Future<void> _openReceipt({
+    required String email,
+    required EntitlementSnapshot snapshot,
+    required PendingStripeCheckout pending,
+  }) async {
+    if (_email() != email) return;
+    final navigator = await _navigatorReady();
+    if (navigator == null || _email() != email) return;
+    if (HiveStorage.pendingForDoctor(email)?.planId.toLowerCase() !=
+        pending.planId.toLowerCase()) {
+      return;
+    }
+
+    var alreadyOpen = false;
+    navigator.popUntil((route) {
+      alreadyOpen = route.settings.name == 'payment-success-receipt';
+      return true;
+    });
+    if (alreadyOpen) {
+      await HiveStorage.clearPendingStripeCheckoutFor(email);
+      _lastNotice = null;
+      return;
+    }
+
+    PlanModel? plan;
+    try {
+      final plans = await PricingApiService().getPlans();
+      for (final item in plans) {
+        if (item.id.toLowerCase() == snapshot.planId.toLowerCase()) {
+          plan = item;
+          break;
+        }
+      }
+    } catch (_) {
+      debugPrint('Plan price could not be loaded for the receipt.');
+    }
+    if (_email() != email) return;
+    if (HiveStorage.pendingForDoctor(email)?.planId.toLowerCase() !=
+        pending.planId.toLowerCase()) {
+      return;
+    }
+
+    final receiptPlan = plan ??
+        PlanModel(
+          id: snapshot.planId,
+          planCode: snapshot.planName,
+          title: snapshot.planName,
+          displayPrice: 0,
+          discountedPrice: 0,
+          currency: 'PKR',
+          includedMinutes: snapshot.allocatedSeconds ~/ 60,
+          includedSeconds: snapshot.allocatedSeconds,
+          expiryDays: 0,
+          isTrial: snapshot.isTrial,
+        );
+    final expires = snapshot.expiresAt;
+    navigator.push(
+      MaterialPageRoute<void>(
+        settings: const RouteSettings(name: 'payment-success-receipt'),
+        builder: (_) => SuccessScreen(
+          selectedPlan: receiptPlan,
+          checkoutMethod: 'Stripe',
+          paymentLabel: 'Stripe',
+          cardNumber: '',
+          transactionId: pending.sessionId ?? '',
+          doctorName: (HiveStorage.getName() ?? '').trim(),
+          expiresOn: expires == null
+              ? ''
+              : '${expires.day}/${expires.month}/${expires.year}',
+          remainingLabel: EntitlementHelper.formatSeconds(snapshot.remainingSeconds),
+          includedLabel: EntitlementHelper.formatSeconds(snapshot.allocatedSeconds),
+        ),
+      ),
+    );
+    if (_email() == email) {
+      await HiveStorage.clearPendingStripeCheckoutFor(email);
+      _lastNotice = null;
+    }
+  }
+
+  Future<NavigatorState?> _navigatorReady() async {
+    final existing = _navigatorKey?.currentState;
+    if (existing != null && existing.mounted) return existing;
+    final ready = Completer<NavigatorState?>();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (ready.isCompleted) return;
+      final state = _navigatorKey?.currentState;
+      ready.complete(state != null && state.mounted ? state : null);
+    });
+    return ready.future;
   }
 
   Future<void> _present({

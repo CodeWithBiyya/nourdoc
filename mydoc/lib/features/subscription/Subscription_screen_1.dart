@@ -11,6 +11,7 @@ import '../../core/storage/hive_storage.dart';
 import '../../app/routes/routs_name.dart';
 import '../../app/theme/colors.dart';
 import 'Checkout.dart';
+import 'SuccessScreen.dart';
 import 'payment_return.dart';
 import 'subscription_guard.dart';
 
@@ -203,10 +204,27 @@ class _SubscriptionScreen1State extends State<SubscriptionScreen1>
         return;
       }
 
-      Navigator.pushNamedAndRemoveUntil(
+      setState(() => entitlementRead = read);
+      final entitlementId = result.data?['entitlement_id']?.toString().trim() ?? '';
+      final expires = confirmed.expiresAt;
+      Navigator.push(
         context,
-        RouteNames.dashboard,
-        (route) => false,
+        MaterialPageRoute<void>(
+          settings: const RouteSettings(name: 'payment-success-receipt'),
+          builder: (_) => SuccessScreen(
+            selectedPlan: plan,
+            checkoutMethod: 'Trial',
+            paymentLabel: 'Trial',
+            cardNumber: '',
+            transactionId: entitlementId,
+            doctorName: (HiveStorage.getName() ?? '').trim(),
+            expiresOn: expires == null
+                ? ''
+                : '${expires.day}/${expires.month}/${expires.year}',
+            remainingLabel: EntitlementHelper.formatSeconds(confirmed.remainingSeconds),
+            includedLabel: EntitlementHelper.formatSeconds(confirmed.allocatedSeconds),
+          ),
+        ),
       );
     } finally {
       if (mounted) setState(() => activatingPlanId = null);

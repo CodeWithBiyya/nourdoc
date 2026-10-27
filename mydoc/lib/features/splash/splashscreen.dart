@@ -239,9 +239,10 @@ class _splashscreen extends State<splashscreen> {
         }
 
         final hasPlan = read.snapshot?.hasEntitlement ?? false;
-        Navigator.pushReplacementNamed(
+        Navigator.pushNamedAndRemoveUntil(
           context,
           hasPlan ? RouteNames.dashboard : RouteNames.subscription_screen,
+          (route) => false,
         );
         // Previous navigation used EntitlementHelper.isEnrolled(status),
         // which ignored a zero balance. If the request failed, the catch
@@ -261,7 +262,13 @@ class _splashscreen extends State<splashscreen> {
         );
       }
     } else {
-      if (mounted) Navigator.pushReplacementNamed(context, RouteNames.login_with_email);
+      if (mounted) {
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          RouteNames.login_with_email,
+          (route) => false,
+        );
+      }
     }
   }
 

@@ -8,6 +8,7 @@ import '../../core/common/http_result.dart';
 import '../../core/repository/Repository.dart';
 import '../../core/services/PlanRequestApiService.dart';
 import '../../core/storage/hive_storage.dart';
+import 'payment_return.dart';
 
 class CurrentPlanScreen extends StatefulWidget {
   const CurrentPlanScreen({super.key});
@@ -77,6 +78,12 @@ class _CurrentPlanScreenState extends State<CurrentPlanScreen> {
     }
 
     final refreshed = await Repository().readDoctorEntitlement();
+    if (clearStripeReminderAfterCancel(
+      cancelAccepted: result.isSuccess,
+      refreshed: refreshed,
+    )) {
+      await HiveStorage.clearPendingStripeCheckoutFor(email);
+    }
     if (!mounted) return;
     setState(() {
       if (refreshed.result != EntitlementFetchResult.network) {

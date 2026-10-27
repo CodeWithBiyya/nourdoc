@@ -148,8 +148,10 @@ class SuccessScreen extends StatelessWidget {
                     child: Column(
                       children: [
                         _summaryRow('Plan', selectedPlan.displayTitle),
-                        _summaryRow('Amount Paid', selectedPlan.formattedPrice),
-                        _summaryRow('Transaction id', transactionId),
+                        if (selectedPlan.effectivePrice > 0 || selectedPlan.isTrial)
+                          _summaryRow('Amount Paid', selectedPlan.formattedPrice),
+                        if (transactionId.trim().isNotEmpty)
+                          _summaryRow('Transaction id', transactionId),
                         _summaryRow('Payment Method', paymentLabel),
                         if (expiresOn.isNotEmpty) _summaryRow('Expires', expiresOn),
                         if (includedLabel.isNotEmpty) _summaryRow('Included time', includedLabel),
@@ -164,7 +166,12 @@ class SuccessScreen extends StatelessWidget {
                     child: Row(
                       children: [
                         _methodIcon(methodForRow).isEmpty
-                            ? const Icon(Icons.credit_card, size: 22)
+                            ? Icon(
+                                methodForRow.toLowerCase() == 'trial'
+                                    ? Icons.schedule
+                                    : Icons.credit_card,
+                                size: 22,
+                              )
                             : Image.asset(
                                 _methodIcon(methodForRow),
                                 width: 24,

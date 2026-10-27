@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:medicalai/core/common/entitlement_helper.dart';
 import 'package:medicalai/features/subscription/payment_return.dart';
 
 void main() {
@@ -52,6 +53,75 @@ void main() {
       expect(
         PaymentReturnLink.tryParse(Uri.parse('nourdoc://dashboard')),
         isNull,
+      );
+    });
+  });
+
+  group('Payment warning', () {
+    const usable = EntitlementRead(
+      EntitlementFetchResult.loaded,
+      EntitlementSnapshot(
+        kind: EntitlementKind.activePaid,
+        planId: 'plan-starter',
+        planName: 'Starter',
+      ),
+    );
+    const noPackage = EntitlementRead.absent;
+
+    test('never started checkout has nothing to warn about on launch', () {
+      expect(
+        showUnconfirmedPaymentWarning(tellUser: false, read: noPackage),
+        isFalse,
+      );
+    });
+
+    test('an unfinished checkout stays quiet on launch and warns after return', () {
+      expect(
+        showUnconfirmedPaymentWarning(tellUser: false, read: noPackage),
+        isFalse,
+      );
+      expect(
+        showUnconfirmedPaymentWarning(tellUser: true, read: noPackage),
+        isTrue,
+      );
+    });
+
+    test('a usable package does not warn', () {
+      expect(
+        showUnconfirmedPaymentWarning(tellUser: false, read: usable),
+        isFalse,
+      );
+      expect(
+        showUnconfirmedPaymentWarning(tellUser: true, read: usable),
+        isFalse,
+      );
+    });
+
+    test('a cancelled package is no longer a checkout to confirm', () {
+      expect(
+        clearStripeReminderAfterCancel(
+          cancelAccepted: true,
+          refreshed: noPackage,
+        ),
+        isTrue,
+      );
+      expect(
+        showUnconfirmedPaymentWarning(tellUser: false, read: noPackage),
+        isFalse,
+      );
+      expect(
+        clearStripeReminderAfterCancel(
+          cancelAccepted: false,
+          refreshed: noPackage,
+        ),
+        isFalse,
+      );
+      expect(
+        clearStripeReminderAfterCancel(
+          cancelAccepted: true,
+          refreshed: usable,
+        ),
+        isFalse,
       );
     });
   });

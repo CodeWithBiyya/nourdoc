@@ -64,9 +64,12 @@ class _SingleSplashScreenState extends State<SingleSplashScreen>
     await Future.delayed(const Duration(milliseconds: 3000));
 
     if (mounted) {
-      Navigator.pushReplacement(
+      // The intro has no back destination. Remove it so a later Back
+      // cannot reveal this screen after its timer has already finished.
+      Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (_) => splashscreen()),
+        (route) => false,
       );
     }
   }

@@ -213,7 +213,10 @@
 import 'package:flutter/material.dart';
 
 import '../../core/models/PlanModel.dart';
-import 'PaymentScreen.dart';
+import '../../core/services/PlanRequestApiService.dart';
+import '../../core/storage/hive_storage.dart';
+import 'payment_return.dart';
+import 'subscription_guard.dart';
 
 class Checkout extends StatefulWidget {
   final PlanModel selectedPlan;
@@ -552,32 +555,76 @@ class _CheckoutState extends State<Checkout> {
   // PROCEED
   // =========================================================
 
+  Future<void> _openStripeCheckout() async {
+    if (_paymentOpened) return;
+    setState(() => _paymentOpened = true);
+    try {
+      if (PaymentReturn.instance.checkoutJustOpened) {
+        _showMessage(
+          'A payment page was just opened. Finish that payment before trying again.',
+        );
+        return;
+      }
+      if (await subscriptionBlocked(context) || !mounted) return;
+
+      final doctorId = (HiveStorage.getUserEmail() ?? '').trim();
+      if (doctorId.isEmpty) {
+        _showMessage('Doctor is not logged in.');
+        return;
+      }
+
+      final result = await PlanRequestApiService().subscribeToPlan(
+        doctorId: doctorId,
+        planId: widget.selectedPlan.id,
+      );
+      if (!mounted) return;
+
+      if (!result.reachedServer || !result.isSuccess || result.data == null) {
+        _showMessage(result.message);
+        return;
+      }
+
+      if (!result.isStripeCheckout) {
+        _showMessage(
+          'The payment page was not returned. Nothing was confirmed.',
+        );
+        return;
+      }
+
+      var opened = false;
+      try {
+        opened = await PaymentReturn.instance.openCheckout(
+          checkoutUrl: result.data?['checkout_url']?.toString() ?? '',
+          planId: widget.selectedPlan.id,
+          sessionId: result.data?['session_id']?.toString(),
+        );
+      } catch (_) {
+        debugPrint('Checkout page could not be opened.');
+      }
+      if (!mounted) return;
+      _showMessage(
+        opened
+            ? 'The Stripe payment page is open in the browser. This plan stays unchanged until it is confirmed.'
+            : 'The payment page could not be opened. Nothing was confirmed. You can try again.',
+      );
+    } finally {
+      if (mounted) setState(() => _paymentOpened = false);
+    }
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), duration: const Duration(seconds: 5)),
+    );
+  }
+
   Widget _proceedButton() {
     return SizedBox(
       width: double.infinity,
       height: 45,
 
       child: ElevatedButton(
-        onPressed: () {
-          if (_paymentOpened) return;
-          _paymentOpened = true;
-          Navigator.push(
-            context,
-
-            MaterialPageRoute(
-              builder: (context) =>
-                  PaymentScreen(
-                selectedPlan:
-                    widget.selectedPlan,
-
-                paymentMethod:
-                    selectedMethod,
-              ),
-            ),
-          ).then((_) {
-            if (mounted) _paymentOpened = false;
-          });
-        },
+        onPressed: _paymentOpened ? null : _openStripeCheckout,
 
         style:
             ElevatedButton.styleFrom(
@@ -591,15 +638,23 @@ class _CheckoutState extends State<Checkout> {
           ),
         ),
 
-        child: const Text(
-          "Proceed",
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 14,
-            fontWeight:
-                FontWeight.bold,
-          ),
-        ),
+        child: _paymentOpened
+            ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              )
+            : const Text(
+                "Proceed",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
       ),
     );
   }
