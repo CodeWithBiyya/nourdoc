@@ -63,6 +63,11 @@ class _SingleSplashScreenState extends State<SingleSplashScreen>
     // Delay thora barha diya taake text read kiya ja saky
     await Future.delayed(const Duration(milliseconds: 3000));
 
+    if (!mounted) return;
+    final route = ModalRoute.of(context);
+    // A payment return may already be the current screen. This timer must
+    // not remove it and leave the window behind the route showing.
+    if (route != null && !route.isCurrent) return;
     if (mounted) {
       // The intro has no back destination. Remove it so a later Back
       // cannot reveal this screen after its timer has already finished.

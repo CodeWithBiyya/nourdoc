@@ -280,9 +280,17 @@ class _SubscriptionScreen1State extends State<SubscriptionScreen1>
     if (mounted) _loadPlans();
   }
 
+  bool get _hasScreenBelow {
+    final route = ModalRoute.of(context);
+    return route != null && !route.isFirst;
+  }
+
   Future<void> _onBack() async {
     if (!mounted) return;
-    if (Navigator.of(context).canPop()) {
+    // canPop is true while the receipt is above this screen, even when
+    // Packages itself is the first route. Popping that first route empties
+    // the navigator. Only pop when a screen is actually underneath.
+    if (_hasScreenBelow && Navigator.of(context).canPop()) {
       Navigator.of(context).pop();
       return;
     }
@@ -303,7 +311,7 @@ class _SubscriptionScreen1State extends State<SubscriptionScreen1>
 
   @override
   Widget build(BuildContext context) {
-    final canLeaveToPreviousScreen = Navigator.of(context).canPop();
+    final canLeaveToPreviousScreen = _hasScreenBelow;
     return PopScope(
       canPop: canLeaveToPreviousScreen,
       onPopInvokedWithResult: (bool didPop, dynamic result) {

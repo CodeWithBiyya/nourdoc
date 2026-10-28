@@ -98,8 +98,11 @@ class Routes {
   debugPrint('⚠️ UNKNOWN ROUTE: ${settings.name}');
 
   return MaterialPageRoute(
-    builder: (_) => const SizedBox.shrink(),
     settings: settings,
+    builder: (_) => const Scaffold(
+      backgroundColor: Colors.white,
+      body: SizedBox.shrink(),
+    ),
   );
     }
   }

@@ -445,7 +445,9 @@ class _AppLifecycleHandlerState
       );
       final email = (HiveStorage.getEmail() ?? '').trim().toLowerCase();
       if (HiveStorage.pendingForDoctor(email) != null) {
-        PaymentReturn.instance.recoverIfPending();
+        if (!PaymentReturn.instance.returnInProgress) {
+          PaymentReturn.instance.recoverIfPending();
+        }
       } else {
         Repository().readDoctorEntitlement();
       }

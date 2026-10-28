@@ -97,6 +97,35 @@ class PaymentReturn {
   String? _seenInitialLink;
   _Notice? _lastNotice;
   String? _lastNoticeEmail;
+  bool _replaceStack = false;
+  bool _returnScheduled = false;
+  final Set<String> _handledSessions = <String>{};
+
+  /// True while a Stripe return is being checked, so resume does not start
+  /// a second check over the same checkout.
+  bool get returnInProgress => _returnScheduled || _busy;
+
+  @visibleForTesting
+  Future<EntitlementRead> Function()? debugReadEntitlement;
+
+  @visibleForTesting
+  void debugBindNavigator(GlobalKey<NavigatorState> navigatorKey) {
+    _navigatorKey = navigatorKey;
+  }
+
+  @visibleForTesting
+  void debugReset() {
+    debugReadEntitlement = null;
+    _replaceStack = false;
+    _returnScheduled = false;
+    _handledSessions.clear();
+    _busy = false;
+    _again = false;
+    _againTell = false;
+    _dialogOpen = false;
+    _lastNotice = null;
+    _lastNoticeEmail = null;
+  }
 
   Future<void> start(GlobalKey<NavigatorState> navigatorKey) async {
     _navigatorKey = navigatorKey;
@@ -108,7 +137,7 @@ class PaymentReturn {
       if (initial != null) {
         _seenInitialLink = initial.toString();
         openedFromLink = true;
-        unawaited(onLink(initial));
+        unawaited(onLink(initial, coldStart: true));
       }
     } catch (_) {
       debugPrint('Payment return initial link failed.');
@@ -170,19 +199,36 @@ class PaymentReturn {
     }
   }
 
-  Future<void> onLink(Uri uri) async {
+  Future<void> onLink(Uri uri, {bool coldStart = false}) async {
     final link = PaymentReturnLink.tryParse(uri);
     if (link == null) return;
     final email = _email();
     final pending = HiveStorage.pendingForDoctor(email);
     if (pending == null) return;
 
+    if (!link.cancelled) {
+      if (pending.sessionId != null && pending.sessionId != link.sessionId) return;
+      final session = link.sessionId;
+      if (session != null && _handledSessions.contains(session)) return;
+    }
+
+    if (_returnScheduled) {
+      if (coldStart) _replaceStack = true;
+      if (!link.cancelled) await reconcile(tellUser: true);
+      return;
+    }
+    _returnScheduled = true;
+    if (coldStart) _replaceStack = true;
+
     if (link.cancelled) {
+      // The previous checkout screen does not exist after the process died.
+      if (coldStart) await _replaceWithPackages();
       await _handleCancel(pending, link.sessionId);
+      _returnScheduled = false;
       return;
     }
 
-    if (pending.sessionId != null && pending.sessionId != link.sessionId) return;
+    await _showProcessing(replaceStack: _replaceStack);
     if (pending.sessionId == null) {
       await HiveStorage.attachPendingSession(
         doctorEmail: email,
@@ -217,18 +263,30 @@ class PaymentReturn {
         final email = _email();
         final token = _token();
         final pending = HiveStorage.pendingForDoctor(email);
-        if (pending == null || !_signedIn(email, token)) break;
+        if (pending == null || !_signedIn(email, token)) {
+          if (tellThis) await _finishWithoutReceipt();
+          break;
+        }
 
         EntitlementRead read;
         try {
-          read = await Repository().readDoctorEntitlement();
+          final reader = debugReadEntitlement;
+          read = reader == null
+              ? await Repository().readDoctorEntitlement()
+              : await reader();
         } catch (_) {
           debugPrint('Payment return entitlement check failed.');
           read = EntitlementRead.network;
         }
 
-        if (!_sameSession(generation, email, token)) break;
-        if (HiveStorage.pendingForDoctor(email)?.planId != pending.planId) break;
+        if (!_sameSession(generation, email, token)) {
+          if (tellThis) await _finishWithoutReceipt();
+          break;
+        }
+        if (HiveStorage.pendingForDoctor(email)?.planId != pending.planId) {
+          if (tellThis) await _finishWithoutReceipt();
+          break;
+        }
         await _apply(read, tellUser: tellThis, email: email);
         if (!_again) break;
         tell = _againTell;
@@ -282,6 +340,7 @@ class PaymentReturn {
 
     if (read.result == EntitlementFetchResult.network ||
         read.result == EntitlementFetchResult.malformed) {
+      if (tellUser) await _leaveProcessing();
       await _present(
         email: email,
         notice: _Notice.unavailable,
@@ -291,6 +350,7 @@ class PaymentReturn {
         content: 'The plan could not be checked. Nothing was changed.',
         allowRetry: true,
       );
+      if (tellUser) _returnScheduled = false;
       return;
     }
 
@@ -307,11 +367,18 @@ class PaymentReturn {
       await _openReceipt(email: email, snapshot: snapshot, pending: pending);
       return;
     }
-    if (snapshot != null && snapshot.canUseProtectedFeatures) return;
+    if (snapshot != null && snapshot.canUseProtectedFeatures) {
+      if (tellUser) await _finishWithoutReceipt();
+      return;
+    }
 
     // The reminder alone is not a payment. Opening the app must not warn.
-    if (!showUnconfirmedPaymentWarning(tellUser: tellUser, read: read)) return;
+    if (!showUnconfirmedPaymentWarning(tellUser: tellUser, read: read)) {
+      if (tellUser) await _finishWithoutReceipt();
+      return;
+    }
 
+    if (tellUser) await _leaveProcessing();
     await _present(
       email: email,
       notice: _Notice.notConfirmed,
@@ -321,6 +388,7 @@ class PaymentReturn {
       content: 'Your payment has not been confirmed yet. Nothing was changed. You can check again.',
       allowRetry: true,
     );
+    if (tellUser) _returnScheduled = false;
   }
 
   Future<void> _openReceipt({
@@ -328,22 +396,28 @@ class PaymentReturn {
     required EntitlementSnapshot snapshot,
     required PendingStripeCheckout pending,
   }) async {
-    if (_email() != email) return;
+    if (_email() != email) {
+      await _finishWithoutReceipt();
+      return;
+    }
     final navigator = await _navigatorReady();
-    if (navigator == null || _email() != email) return;
+    if (navigator == null || _email() != email) {
+      await _finishWithoutReceipt();
+      return;
+    }
     if (HiveStorage.pendingForDoctor(email)?.planId.toLowerCase() !=
         pending.planId.toLowerCase()) {
+      await _finishWithoutReceipt();
       return;
     }
 
-    var alreadyOpen = false;
-    navigator.popUntil((route) {
-      alreadyOpen = route.settings.name == 'payment-success-receipt';
-      return true;
-    });
-    if (alreadyOpen) {
+    if (_topName(navigator) == _receiptRoute) {
       await HiveStorage.clearPendingStripeCheckoutFor(email);
       _lastNotice = null;
+      _returnScheduled = false;
+      _replaceStack = false;
+      final session = pending.sessionId;
+      if (session != null) _handledSessions.add(session);
       return;
     }
 
@@ -359,9 +433,13 @@ class PaymentReturn {
     } catch (_) {
       debugPrint('Plan price could not be loaded for the receipt.');
     }
-    if (_email() != email) return;
+    if (_email() != email) {
+      await _finishWithoutReceipt();
+      return;
+    }
     if (HiveStorage.pendingForDoctor(email)?.planId.toLowerCase() !=
         pending.planId.toLowerCase()) {
+      await _finishWithoutReceipt();
       return;
     }
 
@@ -379,28 +457,95 @@ class PaymentReturn {
           isTrial: snapshot.isTrial,
         );
     final expires = snapshot.expiresAt;
-    navigator.push(
-      MaterialPageRoute<void>(
-        settings: const RouteSettings(name: 'payment-success-receipt'),
-        builder: (_) => SuccessScreen(
-          selectedPlan: receiptPlan,
-          checkoutMethod: 'Stripe',
-          paymentLabel: 'Stripe',
-          cardNumber: '',
-          transactionId: pending.sessionId ?? '',
-          doctorName: (HiveStorage.getName() ?? '').trim(),
-          expiresOn: expires == null
-              ? ''
-              : '${expires.day}/${expires.month}/${expires.year}',
-          remainingLabel: EntitlementHelper.formatSeconds(snapshot.remainingSeconds),
-          includedLabel: EntitlementHelper.formatSeconds(snapshot.allocatedSeconds),
-        ),
+    final page = MaterialPageRoute<void>(
+      settings: const RouteSettings(name: _receiptRoute),
+      builder: (_) => SuccessScreen(
+        selectedPlan: receiptPlan,
+        checkoutMethod: 'Stripe',
+        paymentLabel: 'Stripe',
+        cardNumber: '',
+        transactionId: pending.sessionId ?? '',
+        doctorName: (HiveStorage.getName() ?? '').trim(),
+        expiresOn: expires == null
+            ? ''
+            : '${expires.day}/${expires.month}/${expires.year}',
+        remainingLabel: EntitlementHelper.formatSeconds(snapshot.remainingSeconds),
+        includedLabel: EntitlementHelper.formatSeconds(snapshot.allocatedSeconds),
       ),
     );
-    if (_email() == email) {
-      await HiveStorage.clearPendingStripeCheckoutFor(email);
-      _lastNotice = null;
+    final underReceipt = _topRoute(navigator);
+    navigator.push(page);
+    if (underReceipt?.settings.name == _processingRoute) {
+      navigator.removeRoute(underReceipt!);
     }
+    final session = pending.sessionId;
+    if (session != null) _handledSessions.add(session);
+    _returnScheduled = false;
+    _replaceStack = false;
+    _lastNotice = null;
+    if (_email() == email) {
+      unawaited(HiveStorage.clearPendingStripeCheckoutFor(email));
+    }
+  }
+
+  static const _processingRoute = 'payment-return-processing';
+  static const _receiptRoute = 'payment-success-receipt';
+
+  Future<void> _showProcessing({required bool replaceStack}) async {
+    final navigator = await _navigatorReady();
+    if (navigator == null) return;
+    final top = _topName(navigator);
+    if (top == _processingRoute || top == _receiptRoute) return;
+    final route = MaterialPageRoute<void>(
+      settings: const RouteSettings(name: _processingRoute),
+      builder: (_) => const PaymentReturnProcessingScreen(),
+    );
+    if (replaceStack) {
+      navigator.pushAndRemoveUntil(route, (existing) => false);
+    } else {
+      navigator.push(route);
+    }
+  }
+
+  Future<void> _replaceWithPackages() async {
+    final navigator = await _navigatorReady();
+    if (navigator == null) return;
+    navigator.pushNamedAndRemoveUntil(
+      RouteNames.subscription_screen,
+      (route) => false,
+    );
+    _replaceStack = false;
+  }
+
+  Future<void> _leaveProcessing() async {
+    final navigator = _navigatorKey?.currentState;
+    if (navigator == null || !navigator.mounted) return;
+    if (_topName(navigator) != _processingRoute) return;
+    if (_replaceStack || !navigator.canPop()) {
+      navigator.pushNamedAndRemoveUntil(
+        RouteNames.subscription_screen,
+        (route) => false,
+      );
+    } else {
+      navigator.pop();
+    }
+    _replaceStack = false;
+  }
+
+  Future<void> _finishWithoutReceipt() async {
+    await _leaveProcessing();
+    _returnScheduled = false;
+  }
+
+  String? _topName(NavigatorState navigator) => _topRoute(navigator)?.settings.name;
+
+  Route<dynamic>? _topRoute(NavigatorState navigator) {
+    Route<dynamic>? top;
+    navigator.popUntil((route) {
+      top = route;
+      return true;
+    });
+    return top;
   }
 
   Future<NavigatorState?> _navigatorReady() async {
@@ -485,4 +630,42 @@ class PaymentReturn {
   String _email() => (HiveStorage.getEmail() ?? '').trim().toLowerCase();
 
   String _token() => (HiveStorage.getToken() ?? '').trim();
+}
+
+/// Shown while a Stripe return is waiting for the entitlement check.
+/// The window behind an empty route is not used as this screen.
+class PaymentReturnProcessingScreen extends StatelessWidget {
+  const PaymentReturnProcessingScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: false,
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                CircularProgressIndicator(),
+                SizedBox(height: 24),
+                Text(
+                  'Confirming your payment',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'The plan is being checked. Nothing is changed until it is confirmed.',
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

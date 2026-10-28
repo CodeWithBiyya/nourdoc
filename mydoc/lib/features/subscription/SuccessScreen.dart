@@ -65,6 +65,20 @@ class SuccessScreen extends StatelessWidget {
     }
   }
 
+  void _leaveReceipt(BuildContext context) {
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.pop();
+      return;
+    }
+    // This receipt is the only route, which happens when Stripe opens a new
+    // process. Remove it while adding Packages so the stack is never empty.
+    navigator.pushNamedAndRemoveUntil(
+      RouteNames.subscription_screen,
+      (route) => false,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
@@ -81,7 +95,13 @@ class SuccessScreen extends StatelessWidget {
         : checkoutMethod;
     final maskedCard = _maskedCard;
 
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (bool didPop, dynamic result) {
+        if (didPop) return;
+        _leaveReceipt(context);
+      },
+      child: Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -92,7 +112,7 @@ class SuccessScreen extends StatelessWidget {
             backgroundColor: primaryColor,
             child: IconButton(
               icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 16),
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => _leaveReceipt(context),
             ),
           ),
         ),
@@ -234,6 +254,7 @@ class SuccessScreen extends StatelessWidget {
             ),
           ],
         ),
+      ),
       ),
     );
   }
